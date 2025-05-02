@@ -35,7 +35,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>{
 	
 	// obtener total de gasto por type
 	@Query(
-			value = "SELECT SUM(e.amount) FROM expenses e " +
+			value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
 					"JOIN expensesubtypes es ON e.subtype_id = es.subtype_id " +
 					"JOIN expensetypes et ON es.type_id = et.type_id " +
 					"WHERE et.type_name = :expenseTypeName",
@@ -46,17 +46,17 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>{
 
 	// obtener total de gasto por subtype
 	@Query(
-			value = "SELECT SUM(e.amount) FROM expenses e " +
+			value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
 					"JOIN expensesubtypes es ON e.subtype_id = es.subtype_id " +
 					"WHERE es.subtype_name = :expenseSubtypeName",
 			nativeQuery = true
 			)
-	Double getTotalExpenseAmountBySubtype(@Param("expenseTypeName") String expenseTypeName);
+	Double getTotalExpenseAmountBySubtype(@Param("expenseSubtypeName") String expenseSubtypeName);
 	
 	
 	// obtener total por mes
 	@Query(
-			value = "SELECT SUM(e.amount) FROM expenses e " +
+			value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
 					"WHERE MONTH(e.date) = :monthNumber",
 			nativeQuery = true
 			)
@@ -64,7 +64,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>{
 	
 	// obtener total por año
 	@Query(
-			value = "SELECT SUM(e.amount) FROM expenses e " +
+			value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
 					"WHERE YEAR(e.date) = :year",
 			nativeQuery = true
 			)

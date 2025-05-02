@@ -18,6 +18,11 @@ public class ExpenseTypeService {
 	// Método para guardar un gasto con validación
 	@Transactional
     public ExpenseType saveExpenseType(ExpenseType expenseType) {
+		if (expenseTypeRepository.existsByTypeName(expenseType.getTypeName())) {
+            throw new IllegalArgumentException(
+                "El tipo de gasto '" + expenseType.getTypeName() + "' ya existe"
+            );
+        }
         return expenseTypeRepository.save(expenseType); // Usa el repositorio para guardar
     }
     
@@ -32,16 +37,33 @@ public class ExpenseTypeService {
 
     @Transactional
     public void deleteExpenseType(int id) {
+    	if (!expenseTypeRepository.existsById(id)) {
+            throw new IllegalArgumentException("Tipo de gasto no encontrado con ID: " + id);
+        }
     	expenseTypeRepository.deleteById(id);
     }
     
     @Transactional
     public ExpenseType updateExpense(ExpenseType expenseType) {
-        // Verifica que el tipo de gasto exista
-        if (!expenseTypeRepository.existsById(expenseType.getTypeId())) {
-            throw new RuntimeException("Tipo de gasto no existe");
-        }
+    	
+    	ExpenseType existingType = expenseTypeRepository.findById(expenseType.getTypeId())
+                .orElseThrow(() -> new IllegalArgumentException("Tipo de gasto no encontrado"));
+
+            // Validar nombre único (si el nombre ha cambiado)
+            if (!existingType.getTypeName().equals(expenseType.getTypeName()) 
+                && expenseTypeRepository.existsByTypeName(expenseType.getTypeName())) {
+                throw new IllegalArgumentException(
+                    "El tipo de gasto '" + expenseType.getTypeName() + "' ya existe"
+                );
+            }
+            
+        existingType.setTypeName(expenseType.getTypeName());
+    	
         return expenseTypeRepository.save(expenseType);
     }
 
+    
+    
+    
+    
 }

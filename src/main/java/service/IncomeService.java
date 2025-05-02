@@ -22,6 +22,10 @@ public class IncomeService {
         if (income.getIncomeAmount() < 0) {
             throw new IllegalArgumentException("El monto no puede ser negativo");
         }
+        
+        if (income.getIncomeDate() == null || income.getIncomeType() == null) {
+            throw new IllegalArgumentException("Fecha y tipo de ingreso son obligatorios");
+        }
         return incomeRepository.save(income); // Usa el repositorio para guardar
     }
 	
@@ -36,6 +40,9 @@ public class IncomeService {
 	
 	@Transactional
 	public void deleteIncome(int id) {
+		if (!incomeRepository.existsById(id)) {
+            throw new RuntimeException("Ingreso no encontrado con ID: " + id);
+        }
 		incomeRepository.deleteById(id);
 	}
 	
@@ -44,6 +51,10 @@ public class IncomeService {
 		// Verifica que el ingreso exista
         if (!incomeRepository.existsById(income.getIncomeId())) {
             throw new RuntimeException("Gasto no existe");
+        }
+        
+        if (income.getIncomeAmount() < 0) {
+            throw new IllegalArgumentException("El monto no puede ser negativo");
         }
         return incomeRepository.save(income);
 	}

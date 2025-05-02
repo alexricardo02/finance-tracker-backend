@@ -5,9 +5,11 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import models.Income;
 
+@Repository
 public interface IncomeRepository extends JpaRepository<Income, Integer>{
 	
 		// Obtener todas las incomes de un tipo
@@ -33,7 +35,7 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>{
 		// obtener total por mes
 		@Query(
 				value = "SELECT SUM(i.amount) FROM incomes i " +
-						"WHERE MONTH(e.date) = :monthNumber",
+						"WHERE MONTH(i.date) = :monthNumber",
 				nativeQuery = true
 				)
 		Double getTotalIncomeAmountByMonth(@Param("monthNumber") Integer monthNumber);
@@ -41,7 +43,7 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>{
 		// obtener total por año
 				@Query(
 						value = "SELECT SUM(i.amount) FROM incomes i " +
-								"WHERE YEAR(e.date) = :year",
+								"WHERE YEAR(i.date) = :year",
 						nativeQuery = true
 						)
 		Double getTotalIncomeAmountByYear(@Param("year") Integer year);

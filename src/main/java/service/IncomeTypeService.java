@@ -18,21 +18,32 @@ public class IncomeTypeService {
 	// Método para guardar un gasto con validación
 	@Transactional
     public IncomeType saveIncomeType(IncomeType incomeType) {
+		if (incomeType.getTypeName() == null || incomeType.getTypeName().trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre del tipo de ingreso no puede estar vacío");
+        }
+		if (incomeTypeRepository.incomeTypeExistsById(incomeType.getTypeId())) {
+            throw new IllegalArgumentException("El tipo de ingreso '" + incomeType.getTypeName() + "' ya existe");
+        }
+
         return incomeTypeRepository.save(incomeType); // Usa el repositorio para guardar
     }
     
     public List<IncomeType> getAllIncomeTypes() {
         return incomeTypeRepository.findAll();
     }
-
-    public IncomeType getIncomeTypeById(int id) {
+                             
+    
+    public IncomeType getIncomeTypeById(Integer id) {
         return incomeTypeRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Gasto no encontrado"));
     }
 
+    
     @Transactional
-    public void deleteIncomeType(int id) {
-    	incomeTypeRepository.deleteById(id);
+    public void deleteIncomeType(Integer id) {
+    	IncomeType incomeType = incomeTypeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Tipo de ingreso no encontrado con ID: " + id));
+        incomeTypeRepository.delete(incomeType);
     }
     
     @Transactional

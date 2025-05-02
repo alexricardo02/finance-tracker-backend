@@ -7,11 +7,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import models.Expense;
 import models.Income;
 import models.User;
 
+@Repository
 public interface UserRepository extends JpaRepository<User, Integer>{
 	
 	// Buscar usuario por username (para login)
@@ -37,7 +39,7 @@ public interface UserRepository extends JpaRepository<User, Integer>{
     // Actualizar contraseña
     @Modifying 
     @Query(
-	        value = "UPDATE users u SET u.password_hash = :newPassword WHERE u.id = :userId",
+	        value = "UPDATE users u SET u.password_hash = :newPassword WHERE u.user_id = :userId",
 	        nativeQuery = true // ¡Indica que es SQL!
 	    )
     void updatePassword(@Param("userId") Integer userId, @Param("newPassword") String newPassword);
@@ -49,4 +51,5 @@ public interface UserRepository extends JpaRepository<User, Integer>{
 	        nativeQuery = true // ¡Indica que es SQL!
 	    )
     void updateEmail(@Param("userId") Integer userId, @Param("newEmail") String newEmail);
+
 }

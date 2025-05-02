@@ -4,10 +4,12 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import models.ExpenseSubtype;
 import models.ExpenseType;
 
+@Repository
 public interface ExpenseSubtypeRepository extends JpaRepository<ExpenseSubtype, Integer> {
 	// Busca subtipos por nombre y tipo
     Optional<ExpenseSubtype> findBySubtypeNameAndExpenseType(String subtypeName, ExpenseType expenseType);

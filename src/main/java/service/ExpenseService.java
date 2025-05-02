@@ -29,6 +29,9 @@ public class ExpenseService {
     // Método para crear un Expense con validación de tipo y subtipo
     @Transactional
     public Expense saveExpense(Expense expense, String typeName, String subtypeName) {
+    	if (expense == null || typeName == null || subtypeName == null) {
+            throw new IllegalArgumentException("Parámetros no pueden ser nulos");
+        }
     	// 1. Buscar el ExpenseType por nombre
     	ExpenseType expenseType = expenseTypeRepository.findByTypeName(typeName);
     	if (expenseType == null) {
@@ -73,11 +76,17 @@ public class ExpenseService {
     }
     
     public List<Expense> getExpenseByType(ExpenseType expenseType) {
+    	if (expenseType == null) {
+            throw new IllegalArgumentException("ExpenseType no puede ser nulo");
+        }
     	return expenseRepository.findByExpenseTypeName(expenseType.getTypeName());
     }
     
     
     public List<Expense> getExpenseBySubtype(ExpenseSubtype expenseSubtype) {
+    	if (expenseSubtype == null) {
+            throw new IllegalArgumentException("ExpenseType no puede ser nulo");
+        }
     	return expenseRepository.findByExpenseSubtypeName(expenseSubtype.getSubtypeName());
     }
     
@@ -124,12 +133,7 @@ public class ExpenseService {
     	return expenseRepository.getTotalExpenseAmountByYear(year);
     }
     
-    
-    
-    
-    
-   
-    
+  
     
     
     

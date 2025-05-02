@@ -17,30 +17,26 @@ public class ExpenseSubtypeService {
 	
 	// Método para guardar un gasto con validación
 	@Transactional
-    public ExpenseSubtype saveExpenseType(ExpenseSubtype expenseSubtype) {
+    public ExpenseSubtype saveExpenseSubtype(ExpenseSubtype expenseSubtype) {
         return expenseSubtypeRepository.save(expenseSubtype); // Usa el repositorio para guardar
     }
     
-    public List<ExpenseSubtype> getAllExpenseTypes() {
+    public List<ExpenseSubtype> getAllExpenseSubtypes() {
         return expenseSubtypeRepository.findAll();
     }
 
-    public ExpenseSubtype getExpenseTypeById(int id) {
+    public ExpenseSubtype getExpenseSubtypeById(int id) {
         return expenseSubtypeRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Gasto no encontrado"));
     }
 
     @Transactional
-    public void deleteExpenseType(int id) {
+    public void deleteExpenseSubtype(int id) {
     	expenseSubtypeRepository.deleteById(id);
     }
     
     @Transactional
-    public ExpenseSubtype updateExpense(ExpenseSubtype expenseSubtype) {
-        // Verifica que el tipo de gasto exista
-        if (!expenseSubtypeRepository.existsById(expenseSubtype.getSubtypeId())) {
-            throw new RuntimeException("Tipo de gasto no existe");
-        }
+    public ExpenseSubtype updateExpenseSubtype(ExpenseSubtype expenseSubtype) {
         return expenseSubtypeRepository.save(expenseSubtype);
     }
 
