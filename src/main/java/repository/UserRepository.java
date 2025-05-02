@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -34,6 +35,7 @@ public interface UserRepository extends JpaRepository<User, Integer>{
     List<Income> findIncomesByUserId(@Param("userId") Integer userId);
     
     // Actualizar contraseña
+    @Modifying 
     @Query(
 	        value = "UPDATE users u SET u.password_hash = :newPassword WHERE u.id = :userId",
 	        nativeQuery = true // ¡Indica que es SQL!
@@ -41,9 +43,10 @@ public interface UserRepository extends JpaRepository<User, Integer>{
     void updatePassword(@Param("userId") Integer userId, @Param("newPassword") String newPassword);
     
     // Actualizar email
+    @Modifying 
     @Query(
-	        value = "UPDATE users u SET u.email = :newEmail WHERE u.id = :userId",
+	        value = "UPDATE users u SET u.email = :newEmail WHERE u.user_id = :userId",
 	        nativeQuery = true // ¡Indica que es SQL!
 	    )
-    void updateEmail(@Param("userId") Integer userId, @Param("newEmail") String newPassword);
+    void updateEmail(@Param("userId") Integer userId, @Param("newEmail") String newEmail);
 }

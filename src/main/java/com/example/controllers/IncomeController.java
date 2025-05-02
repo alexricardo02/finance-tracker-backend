@@ -1,5 +1,5 @@
 package com.example.controllers;
 
-public class demo {
+public class IncomeController {
 
 }

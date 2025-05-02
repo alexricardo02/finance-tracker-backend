@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import jakarta.transaction.Transactional;
 import models.Income;
 import models.IncomeType;
 import repository.IncomeRepository;
@@ -15,6 +16,7 @@ public class IncomeService {
 	@Autowired // 
     private IncomeRepository incomeRepository;
 	
+	@Transactional
 	public Income saveIncome(Income income) {
         // Validación: El monto no puede ser negativo
         if (income.getIncomeAmount() < 0) {
@@ -32,10 +34,12 @@ public class IncomeService {
 	            .orElseThrow(() -> new RuntimeException("Ingreso no encontrado"));
 	}
 	
+	@Transactional
 	public void deleteIncome(int id) {
 		incomeRepository.deleteById(id);
 	}
 	
+	@Transactional
 	public Income updateIncome(Income income) {
 		// Verifica que el ingreso exista
         if (!incomeRepository.existsById(income.getIncomeId())) {

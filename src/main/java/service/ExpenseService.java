@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import jakarta.transaction.Transactional;
 import models.Expense;
 import models.ExpenseSubtype;
 import models.ExpenseType;
@@ -26,6 +27,7 @@ public class ExpenseService {
     private ExpenseTypeRepository expenseTypeRepository;
 	
     // Método para crear un Expense con validación de tipo y subtipo
+    @Transactional
     public Expense saveExpense(Expense expense, String typeName, String subtypeName) {
     	// 1. Buscar el ExpenseType por nombre
     	ExpenseType expenseType = expenseTypeRepository.findByTypeName(typeName);
@@ -56,10 +58,12 @@ public class ExpenseService {
             .orElseThrow(() -> new RuntimeException("Gasto no encontrado"));
     }
 
+    @Transactional
     public void deleteExpense(int id) {
         expenseRepository.deleteById(id);
     }
     
+    @Transactional
     public Expense updateExpense(Expense expense) {
         // Verifica que el gasto exista
         if (!expenseRepository.existsById(expense.getExpenseID())) {
