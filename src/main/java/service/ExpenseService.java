@@ -57,8 +57,18 @@ public class ExpenseService {
     	return expenseRepository.findByExpenseSubtypeName(expenseSubtype.getSubtypeName());
     }
     
+    public Double getTotalExpenseAmountByType(ExpenseType expenseType) {
+    	return expenseRepository.getTotalExpenseAmountByType(expenseType.getTypeName());
+    }
+    
+    public Double getTotalExpenseAmountBySubtype(ExpenseSubtype expenseSubtype) {
+    	return expenseRepository.getTotalExpenseAmountBySubtype(expenseSubtype.getSubtypeName());
+    }
     
     
+    
+    
+   
     
     
     

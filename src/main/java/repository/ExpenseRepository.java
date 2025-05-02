@@ -12,7 +12,7 @@ import models.Expense;
 @Repository
 public interface ExpenseRepository extends JpaRepository<Expense, Integer>{
 
-	
+	// Obtener todas las expenses de un tipo
 	@Query(
 	        value = "SELECT * FROM expenses e " +
 	                "JOIN expensesubtypes es ON e.subtype_id = es.subtype_id " +
@@ -20,9 +20,10 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>{
 	                "WHERE et.type_name = :expenseTypeName",
 	        nativeQuery = true // ¡Indica que es SQL!
 	    )
-	    List<Expense> findByExpenseTypeName(@Param("expenseTypeName") String expenseTypeName);
+	List<Expense> findByExpenseTypeName(@Param("expenseTypeName") String expenseTypeName);
 	
 		
+	// Obtener todas las expenses de un subtipo
 	@Query(
 			value = "SELECT * FROM expenses e " +
 					"JOIN expensesubtypes es ON e.subtype_id = es.subtype_id " +
@@ -32,13 +33,35 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>{
 	List<Expense> findByExpenseSubtypeName(@Param("expenseSubtypeName") String expenseSubtypeName);
 	
 	
-	//
+	// obtener total de gasto por type
+	@Query(
+			value = "SELECT SUM(e.amount) FROM expenses e " +
+					"JOIN expensesubtypes es ON e.subtype_id = es.subtype_id " +
+					"JOIN expensetypes et ON es.type_id = et.type_id " +
+					"WHERE et.type_name = :expenseTypeName",
+			nativeQuery = true
+			)
+	Double getTotalExpenseAmountByType(@Param("expenseTypeName") String expenseTypeName);
 	
-	//
+
+	// obtener total de gasto por subtype
+	@Query(
+			value = "SELECT SUM(e.amount) FROM expenses e " +
+					"JOIN expensesubtypes es ON e.subtype_id = es.subtype_id " +
+					"WHERE es.subtype_name = :expenseSubtypeName",
+			nativeQuery = true
+			)
+	Double getTotalExpenseAmountBySubtype(@Param("expenseTypeName") String expenseTypeName);
 	
-	//
 	
-	//
+	// obtener total por mes
+	@Query(
+			value = "SELECT SUM(e.amount) FROM expenses e " +
+					"WHERE MONTH(e.date) = :monthNumber",
+			nativeQuery = true
+			)
+	Double getTotalExpenseAmountByMonth(@Param("monthNumber") Integer monthNumber);
 	
+	// 
 
 }
