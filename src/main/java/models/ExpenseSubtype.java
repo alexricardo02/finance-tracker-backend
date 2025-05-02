@@ -40,7 +40,16 @@ public class ExpenseSubtype {
 	public void setType(ExpenseType type) {
 		this.type = type;
 	}
+
+	public ExpenseSubtype(int subtypeId, String subtypeName, ExpenseType type) {
+		super();
+		this.subtypeId = subtypeId;
+		this.subtypeName = subtypeName;
+		this.type = type;
+	}
 	
+	public ExpenseSubtype() {
+	}
 	
 
 }

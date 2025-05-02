@@ -28,7 +28,14 @@ public class ExpenseType {
 	public void setTypeName(String typeName) {
 		this.typeName = typeName;
 	}
+
+	public ExpenseType(int typeId, String typeName) {
+		super();
+		this.typeId = typeId;
+		this.typeName = typeName;
+	}
 	
-	
+	public ExpenseType() {
+	}
 
 }
