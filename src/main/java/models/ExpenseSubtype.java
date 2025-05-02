@@ -8,9 +8,10 @@ public class ExpenseSubtype {
 	
 	@Id
 	@Column(name="subtype_id", nullable = false)
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int subtypeId;
 	
-	@Column(name="subtype_name", nullable = true)
+	@Column(name="subtype_name", nullable = true, unique = true)
     private String subtypeName;
 	
 	@ManyToOne

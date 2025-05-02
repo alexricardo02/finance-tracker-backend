@@ -12,7 +12,7 @@ public class Expense {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name="id", nullable = false)
-    private int expenseID;
+    private Integer expenseID;
 	
 	@Column(name="amount", nullable = false)
     private double expenseAmount;

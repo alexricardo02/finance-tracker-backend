@@ -1,12 +1,11 @@
 package repository;
 
-import java.util.List;
+import java.util.List; 
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import models.Expense;
 import models.Income;
 
 public interface IncomeRepository extends JpaRepository<Income, Integer>{
@@ -18,7 +17,7 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>{
 		                "WHERE it.type_name = :incomeTypeName",
 		        nativeQuery = true // ¡Indica que es SQL!
 		    )
-		List<Expense> findByIncomeTypeName(@Param("incomeTypeName") String incomeTypeName);
+		List<Income> findByIncomeTypeName(@Param("incomeTypeName") String incomeTypeName);
 	
 		
 		// Obtener total de ingresos por type
@@ -38,5 +37,23 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>{
 				nativeQuery = true
 				)
 		Double getTotalIncomeAmountByMonth(@Param("monthNumber") Integer monthNumber);
+		
+		// obtener total por año
+				@Query(
+						value = "SELECT SUM(i.amount) FROM incomes i " +
+								"WHERE YEAR(e.date) = :year",
+						nativeQuery = true
+						)
+		Double getTotalIncomeAmountByYear(@Param("year") Integer year);
+				
+		//Get total amount of Incomes per year
+				
+		//Get total amount of Incomes per month
+				
+		//Get total amount of Incomes per day
+				
+		//Incomes greater than
+				
+		//Incomes less than
 
 }

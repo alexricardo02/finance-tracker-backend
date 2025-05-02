@@ -1,5 +1,7 @@
 package models;
 
+import java.util.List;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -8,10 +10,15 @@ public class ExpenseType {
 	
 	@Id
 	@Column(name="type_id", nullable = false)
-	private int typeId;
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Integer typeId;
     
-	@Column(name="type_name", nullable = true)
+	@Column(name="type_name", nullable = true, unique = true)
 	private String typeName;
+	
+	// EN DUDA
+	@OneToMany(mappedBy = "expenseType", cascade = CascadeType.ALL)
+    private List<ExpenseSubtype> subtypes;
 
 	public int getTypeId() {
 		return typeId;

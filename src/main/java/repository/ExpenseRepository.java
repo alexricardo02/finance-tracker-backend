@@ -62,6 +62,22 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>{
 			)
 	Double getTotalExpenseAmountByMonth(@Param("monthNumber") Integer monthNumber);
 	
-	// 
+	// obtener total por año
+	@Query(
+			value = "SELECT SUM(e.amount) FROM expenses e " +
+					"WHERE YEAR(e.date) = :year",
+			nativeQuery = true
+			)
+	Double getTotalExpenseAmountByYear(@Param("year") Integer year);
+	
+	//Get total amount of Expenses per year
+	
+	//Get total amount of Expenses per month
+	
+	//Get total amount of Expenses per day
+	
+	//Expenses greater than
+	
+	//Expenses less than
 
 }

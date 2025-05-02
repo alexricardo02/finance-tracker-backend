@@ -1,16 +1,17 @@
 package service;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 
 import models.Expense;
 import models.ExpenseSubtype;
 import models.ExpenseType;
 import repository.ExpenseRepository;
+import repository.ExpenseSubtypeRepository;
+import repository.ExpenseTypeRepository;
 
 @Service 
 public class ExpenseService {
@@ -18,13 +19,32 @@ public class ExpenseService {
 	@Autowired // 
     private ExpenseRepository expenseRepository;
 	
-	// Método para guardar un gasto con validación
-    public Expense saveExpense(Expense expense) {
-        // Validación: El monto no puede ser negativo
-        if (expense.getExpenseAmount() < 0) {
-            throw new IllegalArgumentException("El monto no puede ser negativo");
+	@Autowired
+    private ExpenseSubtypeRepository expenseSubtypeRepository;
+
+    @Autowired
+    private ExpenseTypeRepository expenseTypeRepository;
+	
+    // Método para crear un Expense con validación de tipo y subtipo
+    public Expense saveExpense(Expense expense, String typeName, String subtypeName) {
+    	// 1. Buscar el ExpenseType por nombre
+    	ExpenseType expenseType = expenseTypeRepository.findByTypeName(typeName);
+    	if (expenseType == null) {
+            throw new RuntimeException("Tipo no encontrado: " + typeName);
         }
-        return expenseRepository.save(expense); // Usa el repositorio para guardar
+    	
+    	// 2. Buscar el ExpenseSubtype por nombre y tipo
+    	Optional<ExpenseSubtype> subtype = expenseSubtypeRepository.findBySubtypeNameAndExpenseType(subtypeName, expenseType);
+    	if (!subtype.isPresent()) { // Verificar si el Optional está vacío
+            throw new RuntimeException(
+                "Subtipo '" + subtypeName + "' no pertenece al tipo '" + typeName + "'"
+            );
+        }
+    	
+    	expense.setExpenseSubtype(subtype.get());
+
+    	return expenseRepository.save(expense);
+    	
     }
     
     public List<Expense> getAllExpenses() {
@@ -64,6 +84,42 @@ public class ExpenseService {
     public Double getTotalExpenseAmountBySubtype(ExpenseSubtype expenseSubtype) {
     	return expenseRepository.getTotalExpenseAmountBySubtype(expenseSubtype.getSubtypeName());
     }
+    
+    public Double getTotalExpenseAmounByMonth(String month) {
+    	switch(month) {
+    	case "January": 
+    		return expenseRepository.getTotalExpenseAmountByMonth(1);
+    	case "February": 
+    		return expenseRepository.getTotalExpenseAmountByMonth(2);
+    	case "March": 
+    		return expenseRepository.getTotalExpenseAmountByMonth(3);
+    	case "April": 
+    		return expenseRepository.getTotalExpenseAmountByMonth(4);
+    	case "Mai": 
+    		return expenseRepository.getTotalExpenseAmountByMonth(5);
+    	case "June": 
+    		return expenseRepository.getTotalExpenseAmountByMonth(6);
+    	case "July": 
+    		return expenseRepository.getTotalExpenseAmountByMonth(7);
+    	case "August": 
+    		return expenseRepository.getTotalExpenseAmountByMonth(8);
+    	case "September": 
+    		return expenseRepository.getTotalExpenseAmountByMonth(8);
+    	case "October": 
+    		return expenseRepository.getTotalExpenseAmountByMonth(10);
+    	case "November": 
+    		return expenseRepository.getTotalExpenseAmountByMonth(11);
+    	case "December": 
+    		return expenseRepository.getTotalExpenseAmountByMonth(12);
+    	default:
+    		throw new IllegalArgumentException("Wrong month");
+    	}
+    }
+    
+    public Double getTotalExpenseAmounByYear(Integer year) {
+    	return expenseRepository.getTotalExpenseAmountByYear(year);
+    }
+    
     
     
     
