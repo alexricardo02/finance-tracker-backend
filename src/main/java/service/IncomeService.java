@@ -54,8 +54,11 @@ public class IncomeService {
     }
 
 	
-	public List<Income> getAllIncomes() {
-		return incomeRepository.findAll();
+	public List<IncomeResponseDTO> getAllIncomes() {
+		List<Income> incomes = incomeRepository.findAll();
+		return incomes.stream()
+	            .map(income -> convertToResponseDTO(income))
+	            .toList();
 	};
 	
 	public Income getIncomeById(Integer id) {
@@ -106,8 +109,11 @@ public class IncomeService {
 	}
 
 	
-	public List<Income> findByIncomeTypeName(IncomeType incomeType) {
-		return incomeRepository.findByIncomeTypeName(incomeType.getTypeName());
+	public List<IncomeResponseDTO> findByIncomeTypeName(String incomeType) {
+		List<Income> incomes = incomeRepository.findByIncomeTypeName(incomeType);
+	    return incomes.stream()
+	            .map(income -> convertToResponseDTO(income))
+	            .toList();
 	}
 	
 	public Double getTotalIncomeAmountByType(IncomeType incomeType) {
@@ -148,9 +154,6 @@ public class IncomeService {
 	public double getTotalIncomeAmountByYear(Integer year) {
 		return incomeRepository.getTotalIncomeAmountByYear(year);
 	}
-	
-	
-	
 	
 	
 	private IncomeResponseDTO convertToResponseDTO(Income income) {
