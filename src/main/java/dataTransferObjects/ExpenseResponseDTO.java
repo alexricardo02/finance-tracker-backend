@@ -9,7 +9,14 @@ public class ExpenseResponseDTO {
     private LocalDate date;
     private String subtypeName;
     private String typeName;
+    private Integer userId;
     
+	public Integer getUserId() {
+		return userId;
+	}
+	public void setUserId(Integer userId) {
+		this.userId = userId;
+	}
 	public Integer getId() {
 		return id;
 	}
@@ -40,8 +47,6 @@ public class ExpenseResponseDTO {
 	public void setTypeName(String typeName) {
 		this.typeName = typeName;
 	}
-    
-    
-    
+     
 
 }

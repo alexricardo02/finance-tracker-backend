@@ -14,7 +14,10 @@ public class ExpenseRequestDTO {
     private LocalDate date;
 	@NotBlank(message = "El subtipo es obligatorio")
     private String subtypeName;
-    
+	
+	@NotBlank(message = "User ID is required")
+    @Positive(message = "User ID must be positive")
+    private Integer userId; // Avoid exposing User entity
     
 	public Double getAmount() {
 		return amount;

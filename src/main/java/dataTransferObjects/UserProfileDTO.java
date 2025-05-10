@@ -3,14 +3,11 @@ package dataTransferObjects;
 import java.time.LocalDate;
 
 
-public class UserResponseDTO {
+public class UserProfileDTO {
 
 	private Integer userId;
-	
     private String username;
-	
     private String email;
-	
     private LocalDate creationDate;
 
 	public Integer getUserId() {

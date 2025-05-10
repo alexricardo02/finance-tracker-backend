@@ -3,7 +3,7 @@
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
-public class UserRequestDTO {
+public class UserRegistrationDTO {
 	
 	@NotBlank(message = "El nombre de usuario es obligatorio")
 	private String username;

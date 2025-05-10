@@ -6,8 +6,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
-
-
 public class IncomeRequestDTO {
 
 	@Positive(message = "El income tiene que ser positivo")
