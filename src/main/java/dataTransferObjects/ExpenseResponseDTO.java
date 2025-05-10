@@ -9,6 +9,7 @@ public class ExpenseResponseDTO {
     private LocalDate date;
     private String subtypeName;
     private String typeName;
+    
 	public Integer getId() {
 		return id;
 	}

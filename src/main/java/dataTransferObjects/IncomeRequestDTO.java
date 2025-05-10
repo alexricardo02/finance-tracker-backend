@@ -2,16 +2,24 @@ package dataTransferObjects;
 
 import java.time.LocalDate;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
 
 
 public class IncomeRequestDTO {
 
+	@Positive(message = "El income tiene que ser positivo")
     private Double amount;
 
+	@NotNull(message = "La fecha es obligatoria")
     private LocalDate incomeDate;
     
+	@NotBlank(message = "El tipo es obligatorio")
     private String incomeTypeName;
     
+	@NotNull(message = "El usuario debe existir")
     private Integer userId;
     
     private String incomeDescription;

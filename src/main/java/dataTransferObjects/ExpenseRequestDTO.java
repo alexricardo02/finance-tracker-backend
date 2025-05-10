@@ -2,12 +2,18 @@ package dataTransferObjects;
 
 import java.time.LocalDate;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
+
 public class ExpenseRequestDTO {
 	
+	@Positive(message = "El monto debe ser positivo")
 	private Double amount;
+	
+	@NotBlank(message = "La fecha es obligatoria")
     private LocalDate date;
+	@NotBlank(message = "El subtipo es obligatorio")
     private String subtypeName;
-    private Integer userId;
     
     
 	public Double getAmount() {
@@ -28,14 +34,4 @@ public class ExpenseRequestDTO {
 	public void setSubtypeName(String subtypeName) {
 		this.subtypeName = subtypeName;
 	}
-	public Integer getUserId() {
-		return userId;
-	}
-	public void setUserId(Integer userId) {
-		this.userId = userId;
-	}
-    
-    
-	
-
 }

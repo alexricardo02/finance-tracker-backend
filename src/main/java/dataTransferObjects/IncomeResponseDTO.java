@@ -15,6 +15,7 @@ public class IncomeResponseDTO {
     public static class IncomeUserDTO {
         private Integer userId;
         private String username;
+        
 		public Integer getUserId() {
 			return userId;
 		}
