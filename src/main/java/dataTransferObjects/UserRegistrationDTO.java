@@ -39,6 +39,19 @@ public class UserRegistrationDTO {
 		this.email = email;
 	}
 
+	public UserRegistrationDTO(@NotBlank(message = "El nombre de usuario es obligatorio") String username,
+			@NotBlank(message = "La contraseña es obligatoria") @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).{8,}$", message = "La contraseña debe tener al menos 8 caracteres, una letra y un número") String password,
+			@NotBlank(message = "El email es obligatorio") String email) {
+		super();
+		this.username = username;
+		this.password = password;
+		this.email = email;
+	}
+
+	public UserRegistrationDTO() {
+		super();
+	}
+
     
 
 }

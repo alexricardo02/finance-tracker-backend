@@ -24,7 +24,15 @@ public class ExpenseSubtypeResponseDTO {
 	public void setTypeName(String typeName) {
 		this.typeName = typeName;
 	}
-    
-    
+	public ExpenseSubtypeResponseDTO(Integer subtypeId, String subtypeName, String typeName) {
+		super();
+		this.subtypeId = subtypeId;
+		this.subtypeName = subtypeName;
+		this.typeName = typeName;
+	}
+	public ExpenseSubtypeResponseDTO() {
+		super();
+	}
+   
 
 }

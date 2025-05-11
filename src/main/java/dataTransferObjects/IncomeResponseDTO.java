@@ -78,6 +78,21 @@ public class IncomeResponseDTO {
 	public void setIncomeDescription(String incomeDescription) {
 		this.incomeDescription = incomeDescription;
 	}
+
+	public IncomeResponseDTO(Integer incomeId, Double amount, LocalDate incomeDate, String incomeTypeName,
+			IncomeUserDTO user, String incomeDescription) {
+		super();
+		this.incomeId = incomeId;
+		this.amount = amount;
+		this.incomeDate = incomeDate;
+		this.incomeTypeName = incomeTypeName;
+		this.user = user;
+		this.incomeDescription = incomeDescription;
+	}
+
+	public IncomeResponseDTO() {
+		super();
+	}
     
     
 

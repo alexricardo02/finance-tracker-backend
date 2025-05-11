@@ -61,6 +61,22 @@ public class IncomeRequestDTO {
 	public void setIncomeDescription(String incomeDescription) {
 		this.incomeDescription = incomeDescription;
 	}
+
+	public IncomeRequestDTO(@Positive(message = "El income tiene que ser positivo") Double amount,
+			@NotNull(message = "La fecha es obligatoria") LocalDate incomeDate,
+			@NotBlank(message = "El tipo es obligatorio") String incomeTypeName,
+			@NotNull(message = "El usuario debe existir") Integer userId, String incomeDescription) {
+		super();
+		this.amount = amount;
+		this.incomeDate = incomeDate;
+		this.incomeTypeName = incomeTypeName;
+		this.userId = userId;
+		this.incomeDescription = incomeDescription;
+	}
+
+	public IncomeRequestDTO() {
+		super();
+	}
     
 	
 }

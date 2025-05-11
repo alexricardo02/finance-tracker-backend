@@ -2,10 +2,12 @@ package service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import dataTransferObjects.ExpenseResponseDTO;
 import jakarta.transaction.Transactional;
 import models.Expense;
 import models.ExpenseSubtype;
@@ -25,6 +27,18 @@ public class ExpenseService {
 
     @Autowired
     private ExpenseTypeRepository expenseTypeRepository;
+    
+ // Helper method to convert Expense → ExpenseResponseDTO
+    private ExpenseResponseDTO convertToResponseDTO(Expense expense) {
+        return new ExpenseResponseDTO(
+            expense.getExpenseID(),
+            expense.getExpenseAmount(),
+            expense.getExpenseDate().toString(),
+            expense.getExpenseSubtype().getSubtypeName(),
+            expense.getExpenseSubtype().getType().getTypeName(),
+            expense.getUser().getUserId()
+        );
+    }
 	
     // Método para crear un Expense con validación de tipo y subtipo
     @Transactional
@@ -52,10 +66,13 @@ public class ExpenseService {
     	
     }
     
+    
     public List<Expense> getAllExpenses() {
-        return expenseRepository.findAll();
+    	List<Expense> expenses = expenseRepository.findAll();
+    	return expenses.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
     }
 
+    
     public Expense getExpenseById(int id) {
         return expenseRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Gasto no encontrado"));

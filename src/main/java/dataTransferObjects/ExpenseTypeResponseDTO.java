@@ -26,6 +26,15 @@ public class ExpenseTypeResponseDTO {
 	public void setSubtypes(List<ExpenseSubtypeResponseDTO> subtypes) {
 		this.subtypes = subtypes;
 	}
+	public ExpenseTypeResponseDTO(Integer typeId, String typeName, List<ExpenseSubtypeResponseDTO> subtypes) {
+		super();
+		this.typeId = typeId;
+		this.typeName = typeName;
+		this.subtypes = subtypes;
+	}
+	public ExpenseTypeResponseDTO() {
+		super();
+	}
 
     
     

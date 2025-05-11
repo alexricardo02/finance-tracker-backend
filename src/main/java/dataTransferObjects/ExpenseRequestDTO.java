@@ -18,7 +18,22 @@ public class ExpenseRequestDTO {
 	@NotBlank(message = "User ID is required")
     @Positive(message = "User ID must be positive")
     private Integer userId; // Avoid exposing User entity
+	
+	
     
+	public ExpenseRequestDTO() {
+		super();
+	}
+	public ExpenseRequestDTO(@Positive(message = "El monto debe ser positivo") Double amount,
+			@NotBlank(message = "La fecha es obligatoria") LocalDate date,
+			@NotBlank(message = "El subtipo es obligatorio") String subtypeName,
+			@NotBlank(message = "User ID is required") @Positive(message = "User ID must be positive") Integer userId) {
+		super();
+		this.amount = amount;
+		this.date = date;
+		this.subtypeName = subtypeName;
+		this.userId = userId;
+	}
 	public Double getAmount() {
 		return amount;
 	}

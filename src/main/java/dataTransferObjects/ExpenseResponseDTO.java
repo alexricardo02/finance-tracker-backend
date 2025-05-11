@@ -11,6 +11,19 @@ public class ExpenseResponseDTO {
     private String typeName;
     private Integer userId;
     
+	public ExpenseResponseDTO() {
+		super();
+	}
+	public ExpenseResponseDTO(Integer id, Double amount, LocalDate date, String subtypeName, String typeName,
+			Integer userId) {
+		super();
+		this.id = id;
+		this.amount = amount;
+		this.date = date;
+		this.subtypeName = subtypeName;
+		this.typeName = typeName;
+		this.userId = userId;
+	}
 	public Integer getUserId() {
 		return userId;
 	}

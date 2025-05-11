@@ -42,6 +42,18 @@ public class UserProfileDTO {
 		this.creationDate = creationDate;
 	}
 
+	public UserProfileDTO(Integer userId, String username, String email, LocalDate creationDate) {
+		super();
+		this.userId = userId;
+		this.username = username;
+		this.email = email;
+		this.creationDate = creationDate;
+	}
+
+	public UserProfileDTO() {
+		super();
+	}
+
     
 
 }
