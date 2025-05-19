@@ -14,5 +14,7 @@ public interface IncomeTypeRepository extends JpaRepository<IncomeType, Integer>
 	boolean incomeTypeExistsById(Integer id);
 	
 	Optional<IncomeType> findByTypeName(String typeName);
+	
+	boolean existsByTypeName(String incomeTypeName);
 
 }

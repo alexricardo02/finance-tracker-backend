@@ -42,7 +42,6 @@ public class ExpenseController {
  // Get all expenses
     @GetMapping
     public List<ExpenseResponseDTO> getAllExpenses(@RequestParam(required = false) Integer userId, @RequestParam(required = false) String month) {
-    	
     	return expenseService.getAllExpenses();
     }
     

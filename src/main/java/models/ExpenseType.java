@@ -20,11 +20,12 @@ public class ExpenseType {
 	@OneToMany(mappedBy = "expenseType", cascade = CascadeType.ALL)
     private List<ExpenseSubtype> subtypes;
 
-	public int getTypeId() {
+
+	public Integer getTypeId() {
 		return typeId;
 	}
 
-	public void setTypeId(int typeId) {
+	public void setTypeId(Integer typeId) {
 		this.typeId = typeId;
 	}
 
@@ -34,6 +35,14 @@ public class ExpenseType {
 
 	public void setTypeName(String typeName) {
 		this.typeName = typeName;
+	}
+
+	public List<ExpenseSubtype> getSubtypes() {
+		return subtypes;
+	}
+
+	public void setSubtypes(List<ExpenseSubtype> subtypes) {
+		this.subtypes = subtypes;
 	}
 
 	public ExpenseType(int typeId, String typeName) {

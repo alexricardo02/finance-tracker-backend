@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import dataTransferObjects.ExpenseRequestDTO;
 import dataTransferObjects.ExpenseResponseDTO;
 import jakarta.transaction.Transactional;
 import models.Expense;
@@ -28,12 +29,15 @@ public class ExpenseService {
     @Autowired
     private ExpenseTypeRepository expenseTypeRepository;
     
- // Helper method to convert Expense → ExpenseResponseDTO
+    @Autowired
+    private ExpenseSubtypeService expenseSubtypeService; // Injected dependency
+    
+    // Helper method to convert Expense → ExpenseResponseDTO
     private ExpenseResponseDTO convertToResponseDTO(Expense expense) {
         return new ExpenseResponseDTO(
             expense.getExpenseID(),
             expense.getExpenseAmount(),
-            expense.getExpenseDate().toString(),
+            expense.getExpenseDate(),
             expense.getExpenseSubtype().getSubtypeName(),
             expense.getExpenseSubtype().getType().getTypeName(),
             expense.getUser().getUserId()
@@ -42,7 +46,9 @@ public class ExpenseService {
 	
     // Método para crear un Expense con validación de tipo y subtipo
     @Transactional
-    public Expense saveExpense(Expense expense, String typeName, String subtypeName) {
+    public ExpenseResponseDTO saveExpense(Expense expense, String typeName, String subtypeName) {
+
+    	
     	if (expense == null || typeName == null || subtypeName == null) {
             throw new IllegalArgumentException("Parámetros no pueden ser nulos");
         }
@@ -61,21 +67,20 @@ public class ExpenseService {
         }
     	
     	expense.setExpenseSubtype(subtype.get());
-
-    	return expenseRepository.save(expense);
+    	Expense expenseToSave = expenseRepository.save(expense);
+    	return convertToResponseDTO(expenseToSave);
     	
     }
     
-    
-    public List<Expense> getAllExpenses() {
+   
+    public List<ExpenseResponseDTO> getAllExpenses() { 
     	List<Expense> expenses = expenseRepository.findAll();
     	return expenses.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
     }
 
-    
-    public Expense getExpenseById(int id) {
-        return expenseRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Gasto no encontrado"));
+    public ExpenseResponseDTO getExpenseById(int id) { 
+    	Expense expense = expenseRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Expense not found with ID: " + id));
+    	return convertToResponseDTO(expense);
     }
 
     @Transactional
@@ -84,27 +89,37 @@ public class ExpenseService {
     }
     
     @Transactional
-    public Expense updateExpense(Expense expense) {
-        // Verifica que el gasto exista
-        if (!expenseRepository.existsById(expense.getExpenseID())) {
-            throw new RuntimeException("Gasto no existe");
-        }
-        return expenseRepository.save(expense);
+    public ExpenseResponseDTO  updateExpense(int expenseId, ExpenseRequestDTO requestDTO) {
+    	
+    	Expense existingExpense = expenseRepository.findById(expenseId).orElseThrow(() -> new IllegalArgumentException("Expense not found"));
+    			
+    	existingExpense.setExpenseAmount(requestDTO.getAmount());
+        existingExpense.setExpenseDate(requestDTO.getDate());
+        
+        ExpenseSubtype subtype = expenseSubtypeService.findBySubtypeName(requestDTO.getSubtypeName());
+        
+        existingExpense.setExpenseSubtype(subtype);
+        Expense updatedExpense = expenseRepository.save(existingExpense);
+        return convertToResponseDTO(updatedExpense);
     }
-    
-    public List<Expense> getExpenseByType(ExpenseType expenseType) {
+
+    public List<ExpenseResponseDTO> getExpenseByType(String expenseType) {
+
     	if (expenseType == null) {
             throw new IllegalArgumentException("ExpenseType no puede ser nulo");
         }
-    	return expenseRepository.findByExpenseTypeName(expenseType.getTypeName());
+    	List<Expense> expenses = expenseRepository.findByExpenseTypeName(expenseType);
+    	
+    	return expenses.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
     }
     
-    
-    public List<Expense> getExpenseBySubtype(ExpenseSubtype expenseSubtype) {
+    public List<ExpenseResponseDTO> getExpenseBySubtype(String expenseSubtype) {
+
+    	List<Expense> expenses = expenseRepository.findByExpenseSubtypeName(expenseSubtype);
     	if (expenseSubtype == null) {
             throw new IllegalArgumentException("ExpenseType no puede ser nulo");
         }
-    	return expenseRepository.findByExpenseSubtypeName(expenseSubtype.getSubtypeName());
+    	return expenses.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
     }
     
     public Double getTotalExpenseAmountByType(ExpenseType expenseType) {

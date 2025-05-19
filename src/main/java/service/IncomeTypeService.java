@@ -5,7 +5,10 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import dataTransferObjects.IncomeTypeRequestDTO;
+import dataTransferObjects.IncomeTypeResponseDTO;
 import jakarta.transaction.Transactional;
+import models.ExpenseType;
 import models.IncomeType;
 import repository.IncomeTypeRepository;
 
@@ -15,17 +18,33 @@ public class IncomeTypeService {
 	@Autowired // 
     private IncomeTypeRepository incomeTypeRepository;
 	
+	// Convert entity → DTO
+    private IncomeTypeResponseDTO convertToResponseDTO(IncomeType incomeType) {
+        IncomeTypeResponseDTO dto = new IncomeTypeResponseDTO();
+        dto.setTypeId(incomeType.getTypeId());
+        dto.setTypeName(incomeType.getTypeName());
+        return dto;
+    }
+	
 	// Método para guardar un gasto con validación
 	@Transactional
-    public IncomeType saveIncomeType(IncomeType incomeType) {
+    public IncomeTypeResponseDTO saveIncomeType(IncomeTypeRequestDTO incomeType) {
 		if (incomeType.getTypeName() == null || incomeType.getTypeName().trim().isEmpty()) {
             throw new IllegalArgumentException("El nombre del tipo de ingreso no puede estar vacío");
         }
-		if (incomeTypeRepository.incomeTypeExistsById(incomeType.getTypeId())) {
-            throw new IllegalArgumentException("El tipo de ingreso '" + incomeType.getTypeName() + "' ya existe");
+		if (incomeTypeRepository.existsByTypeName(incomeType.getTypeName())) {
+            throw new IllegalArgumentException(
+                "El tipo de gasto '" + incomeType.getTypeName() + "' ya existe"
+            );
         }
+		
+		IncomeType incomeTypeResult = new IncomeType();
+		incomeTypeResult.setTypeName(incomeType.getTypeName());
 
-        return incomeTypeRepository.save(incomeType); // Usa el repositorio para guardar
+        // Save and convert to DTO
+        IncomeType savedType = incomeTypeRepository.save(incomeTypeResult);
+        return convertToResponseDTO(savedType);
+
     }
     
     public List<IncomeType> getAllIncomeTypes() {

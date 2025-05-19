@@ -16,4 +16,6 @@ public interface ExpenseSubtypeRepository extends JpaRepository<ExpenseSubtype, 
 
  // Lista todos los subtipos de un tipo específico
     List<ExpenseSubtype> findByExpenseType(ExpenseType expenseType);
+    
+    Optional<ExpenseSubtype> findBySubtypeName(String subtypeName);
 }
