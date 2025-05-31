@@ -1,13 +1,21 @@
 package service;
 
+import java.sql.Timestamp;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import dataTransferObjects.IncomeTypeResponseDTO;
+import dataTransferObjects.PasswordChangeDTO;
+import dataTransferObjects.UserProfileDTO;
+import dataTransferObjects.UserRegistrationDTO;
+import dataTransferObjects.UserUpdateDTO;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import models.Expense;
 import models.Income;
+import models.IncomeType;
 import models.User;
 import repository.UserRepository;
 
@@ -20,54 +28,89 @@ public class UserService {
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 	
+	// Helper: Convert User → ProfileDTO
+    private UserProfileDTO convertToProfileDTO(User user) {
+        UserProfileDTO dto = new UserProfileDTO();
+        dto.setUserId(user.getUserId());
+        dto.setUsername(user.getUsername());
+        dto.setEmail(user.getEmail());
+        dto.setCreationDate(user.getCreation_date());
+        return dto;
+    }
+	
 	@Transactional
-	public User saveUser(User user) {
-		if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
-            throw new IllegalArgumentException("El nombre de usuario no puede estar vacío");
+	public UserProfileDTO  saveUser(UserRegistrationDTO  registrationDTO) {
+		if (userRepository.existsByEmail(registrationDTO.getEmail())) {
+            throw new IllegalArgumentException("Email already registered");
         }
-        if (user.getEmail() == null || !isValidEmail(user.getEmail())) {
-            throw new IllegalArgumentException("El email no es válido");
+		// Validate username uniqueness
+        if (userRepository.existsByUsername(registrationDTO.getUsername())) {
+            throw new IllegalArgumentException("Username already taken");
         }
-        if (userRepository.existsByUsername(user.getUsername())) {
-            throw new IllegalArgumentException("El nombre de usuario ya está en uso");
-        }
-        if (userRepository.existsByEmail(user.getEmail())) {
-            throw new IllegalArgumentException("El email ya está registrado");
-        }
-        return userRepository.save(user); // Usa el repositorio para guardar
+        
+     // Create new user
+        User user = new User();
+        user.setUsername(registrationDTO.getUsername());
+        user.setEmail(registrationDTO.getEmail());
+        user.setPassword_hash(passwordEncoder.encode(registrationDTO.getPassword()));
+        user.setCreation_date(new Timestamp(System.currentTimeMillis()));
+        
+        User savedUser = userRepository.save(user);
+        return convertToProfileDTO(savedUser);
+        
     }
 	
 	public List<User> getAllUsers() {
 		return userRepository.findAll();
 	};
 	
-	public User getUserById(Integer id) {
-		return userRepository.findById(id)
-	            .orElseThrow(() -> new RuntimeException("User no encontrado"));
+	public UserProfileDTO getUserById(Integer id) {
+		User user = userRepository.findById(id)
+	            .orElseThrow(() -> new EntityNotFoundException("User not found"));
+	        return convertToProfileDTO(user);
 	}
 	
 	@Transactional
 	public void deleteUser(Integer id) {
 		User user = userRepository.findById(id)
 	            .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
-		userRepository.delete(user);
+		userRepository.deleteById(id);
 	}
 	
-	@Transactional
-	public User updateUser(User user) {
-		// Verifica que el ingreso exista
-		User existingUser = userRepository.findById(user.getUserId())
-	            .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + user.getUserId()));
+	
+	// Update user profile (username/email)
+    @Transactional
+    public UserProfileDTO updateUserProfile(Integer userId, UserUpdateDTO updateDTO) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new EntityNotFoundException("User not found"));
         
-		// Validar y actualizar campos no sensibles
-        if (user.getUsername() != null && !user.getUsername().equals(existingUser.getUsername())) {
-            throw new IllegalArgumentException("El nombre de usuario no puede modificarse");
+        // Update username if provided and unique
+        if (updateDTO != null) {
+            if (!user.getUsername().equals(updateDTO.getUsername())) {
+                if (userRepository.existsByUsername(updateDTO.getUsername())) {
+                    throw new IllegalArgumentException("Username already taken");
+                }
+                user.setUsername(updateDTO.getUsername());
+            }
         }
-        existingUser.setEmail(user.getEmail()); // Validar email en un método separado si es necesario
-        existingUser.setCreation_date(user.getCreation_date()); // Omitir si no debe actualizarse
-
-        return userRepository.save(existingUser);
-	}
+        
+        // Update email if provided and valid
+        if (updateDTO.getEmail() != null) {
+            if (!user.getEmail().equals(updateDTO.getEmail())) {
+                if (userRepository.existsByEmail(updateDTO.getEmail())) {
+                    throw new IllegalArgumentException("Email already registered");
+                }
+                if (!isValidEmail(updateDTO.getEmail())) {
+                    throw new IllegalArgumentException("Invalid email format");
+                }
+                user.setEmail(updateDTO.getEmail());
+            }
+        }
+        
+        return convertToProfileDTO(userRepository.save(user));
+       
+    }
+    
 	
 	public List<Expense> findExpensesByUserId(Integer id) {
 		return userRepository.findExpensesByUserId(id);
@@ -77,25 +120,23 @@ public class UserService {
 		return userRepository.findIncomesByUserId(id);
 	}
 	
-	@Transactional
-	public void updatePassword(Integer userId, String newPassword) {
-		User user = userRepository.findById(userId)
-	            .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + userId));
-		String encryptedPassword = passwordEncoder.encode(newPassword);
-		user.setPassword_hash(encryptedPassword);
-        userRepository.save(user);
-	}
 	
 	@Transactional
-	public void updateEmail(Integer userId, String newEmail) {
-		if (!isValidEmail(newEmail)) {
-            throw new IllegalArgumentException("El email no es válido");
-        }
+    public void updatePassword(Integer userId, PasswordChangeDTO passwordDTO) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + userId));
-        user.setEmail(newEmail);
+            .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        
+        // Verify current password
+        if (!passwordEncoder.matches(passwordDTO.getCurrentPassword(), user.getPassword_hash())) {
+            throw new SecurityException("Current password is incorrect");
+        }
+        
+        // Update to new password
+        user.setPassword_hash(passwordEncoder.encode(passwordDTO.getNewPassword()));
         userRepository.save(user);
-	}
+    }
+
+
 	
 	private boolean isValidEmail(String email) {
         return email != null && email.matches("^[A-Za-z0-9+_.-]+@(.+)$");

@@ -1,14 +1,13 @@
 package dataTransferObjects;
 
-import java.time.LocalDate;
-
+import java.util.Date;
 
 public class UserProfileDTO {
 
 	private Integer userId;
     private String username;
     private String email;
-    private LocalDate creationDate;
+    private Date creationDate;
 
 	public Integer getUserId() {
 		return userId;
@@ -34,15 +33,15 @@ public class UserProfileDTO {
 		this.email = email;
 	}
 
-	public LocalDate getCreationDate() {
+	public Date getCreationDate() {
 		return creationDate;
 	}
 
-	public void setCreationDate(LocalDate creationDate) {
+	public void setCreationDate(Date creationDate) {
 		this.creationDate = creationDate;
 	}
 
-	public UserProfileDTO(Integer userId, String username, String email, LocalDate creationDate) {
+	public UserProfileDTO(Integer userId, String username, String email, Date creationDate) {
 		super();
 		this.userId = userId;
 		this.username = username;

@@ -1,14 +1,11 @@
 package service;
-
 import java.util.List;
-
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import dataTransferObjects.IncomeTypeRequestDTO;
 import dataTransferObjects.IncomeTypeResponseDTO;
 import jakarta.transaction.Transactional;
-import models.ExpenseType;
 import models.IncomeType;
 import repository.IncomeTypeRepository;
 
@@ -47,14 +44,16 @@ public class IncomeTypeService {
 
     }
     
-    public List<IncomeType> getAllIncomeTypes() {
-        return incomeTypeRepository.findAll();
+    public List<IncomeTypeResponseDTO> getAllIncomeTypes() {
+    	List<IncomeType> incomeTypes = incomeTypeRepository.findAll();
+    	return incomeTypes.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
     }
-                             
     
-    public IncomeType getIncomeTypeById(Integer id) {
-        return incomeTypeRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Gasto no encontrado"));
+    
+    public IncomeTypeResponseDTO getIncomeTypeById(Integer id) {
+        IncomeType incomeType = incomeTypeRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Incomesubtype not found with ID: " + id));
+
+    	return convertToResponseDTO(incomeType);
     }
 
     
@@ -65,13 +64,26 @@ public class IncomeTypeService {
         incomeTypeRepository.delete(incomeType);
     }
     
+    
     @Transactional
-    public IncomeType updateIncome(IncomeType incomeType) {
-        // Verifica que el tipo de gasto exista
-        if (!incomeTypeRepository.existsById(incomeType.getTypeId())) {
-            throw new RuntimeException("Tipo de gasto no existe");
+    public IncomeTypeResponseDTO updateIncomeType(int typeId, IncomeTypeRequestDTO requestDTO) {
+    	IncomeType existingType = incomeTypeRepository.findById(typeId)
+                .orElseThrow(() -> new IllegalArgumentException("Tipo de ingreso no encontrado"));
+    	
+    	// Validate uniqueness if name changes
+        if (!existingType.getTypeName().equals(requestDTO.getTypeName()) 
+            && incomeTypeRepository.existsByTypeName(requestDTO.getTypeName())) {
+            throw new IllegalArgumentException(
+                "El tipo de ingreso '" + requestDTO.getTypeName() + "' ya existe"
+            );
         }
-        return incomeTypeRepository.save(incomeType);
-    }
+    	
+        // Update fields
+        existingType.setTypeName(requestDTO.getTypeName());
+
+        // Save and convert to DTO
+        IncomeType updatedType = incomeTypeRepository.save(existingType);
+        return convertToResponseDTO(updatedType);
+    }    
 
 }

@@ -24,19 +24,16 @@ import service.ExpenseTypeService;
 public class ExpenseController {
 	
 	private final ExpenseService expenseService;
-    private final ExpenseSubtypeService expenseSubtypeService;
     
-    @Autowired
-    public ExpenseController(ExpenseService expenseService, ExpenseSubtypeService expenseSubtypeService) {
+    public ExpenseController(ExpenseService expenseService) {
     	this.expenseService = expenseService;
-        this.expenseSubtypeService = expenseSubtypeService;
     }
     
     //Create an Expense
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ExpenseResponseDTO createExpense(@Valid @RequestBody ExpenseRequestDTO requestDTO) {
-    	return expenseService.saveExpense(null, null, null)
+    	return expenseService.saveExpense(null, null, null);
     }
     
  // Get all expenses
@@ -45,10 +42,4 @@ public class ExpenseController {
     	return expenseService.getAllExpenses();
     }
     
-    
-    
-    
-    
-	
-
 }
