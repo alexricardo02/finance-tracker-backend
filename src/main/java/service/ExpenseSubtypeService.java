@@ -1,17 +1,16 @@
 package service;
 
-import java.util.List;
+import java.util.List; 
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import dataTransferObjects.ExpenseRequestDTO;
 import dataTransferObjects.ExpenseSubtypeRequestDTO;
 import dataTransferObjects.ExpenseSubtypeResponseDTO;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
-import models.Expense;
 import models.ExpenseSubtype;
 import models.ExpenseType;
 import repository.ExpenseSubtypeRepository;
@@ -64,7 +63,7 @@ public class ExpenseSubtypeService {
     }
     
     @Transactional
-    public ExpenseSubtypeResponseDTO updateExpenseSubtype(int expenseSubtypeId, ExpenseSubtypeRequestDTO requestDTO) {
+    public ExpenseSubtypeResponseDTO updateExpenseSubtype(int expenseSubtypeId, ExpenseSubtypeRequestDTO requestDTO) { 
     	ExpenseSubtype existingExpenseSubtype = expenseSubtypeRepository.findById(expenseSubtypeId).orElseThrow(() -> new IllegalArgumentException("Expense subtype not found"));
 		
     	if (requestDTO.getTypeId() != null) {
@@ -93,4 +92,12 @@ public class ExpenseSubtypeService {
         return convertToResponseDTO(subtype);
     }
 
+ // Add this new method
+    public ExpenseSubtype findByTypeNameAndSubtypeName(String typeName, String subtypeName) {
+        return expenseSubtypeRepository.findBySubtypeNameAndExpenseType(subtypeName, typeName)
+            .orElseThrow(() -> new EntityNotFoundException(
+                "Subtype '" + subtypeName + "' not found under type '" + typeName + "'"
+            ));
+    }
+    
 }

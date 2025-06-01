@@ -20,8 +20,6 @@ public class ExpenseTypeService {
 	
 	@Autowired // 
     private ExpenseTypeRepository expenseTypeRepository;
-
-	
 	
 	// Helper method: Convert entity to DTO
     private ExpenseTypeResponseDTO convertToResponseDTO(ExpenseType expenseType) {

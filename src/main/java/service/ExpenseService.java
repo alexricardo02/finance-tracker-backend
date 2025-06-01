@@ -9,19 +9,24 @@ import org.springframework.stereotype.Service;
 
 import dataTransferObjects.ExpenseRequestDTO;
 import dataTransferObjects.ExpenseResponseDTO;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import models.Expense;
 import models.ExpenseSubtype;
 import models.ExpenseType;
+import models.User;
 import repository.ExpenseRepository;
 import repository.ExpenseSubtypeRepository;
 import repository.ExpenseTypeRepository;
+import repository.UserRepository;
 
 @Service 
 public class ExpenseService {
 	
 	@Autowired // 
     private ExpenseRepository expenseRepository;
+	
+	@Autowired UserRepository userRepository;
 	
 	@Autowired
     private ExpenseSubtypeRepository expenseSubtypeRepository;
@@ -31,6 +36,8 @@ public class ExpenseService {
     
     @Autowired
     private ExpenseSubtypeService expenseSubtypeService; // Injected dependency
+    
+    private ExpenseTypeService expenseTypeSerice;
     
     // Helper method to convert Expense → ExpenseResponseDTO
     private ExpenseResponseDTO convertToResponseDTO(Expense expense) {
@@ -46,30 +53,28 @@ public class ExpenseService {
 	
     // Método para crear un Expense con validación de tipo y subtipo
     @Transactional
-    public ExpenseResponseDTO saveExpense(Expense expense, String typeName, String subtypeName) {
-
+    public ExpenseResponseDTO saveExpense(ExpenseRequestDTO requestDTO) {
     	
-    	if (expense == null || typeName == null || subtypeName == null) {
-            throw new IllegalArgumentException("Parámetros no pueden ser nulos");
-        }
-    	// 1. Buscar el ExpenseType por nombre
-    	ExpenseType expenseType = expenseTypeRepository.findByTypeName(typeName);
-    	if (expenseType == null) {
-            throw new RuntimeException("Tipo no encontrado: " + typeName);
-        }
+    	ExpenseSubtype subtype = expenseSubtypeService.findByTypeNameAndSubtypeName(
+    	        requestDTO.getTypeName(), 
+    	        requestDTO.getSubtypeName()
+    	    );
     	
-    	// 2. Buscar el ExpenseSubtype por nombre y tipo
-    	Optional<ExpenseSubtype> subtype = expenseSubtypeRepository.findBySubtypeNameAndExpenseType(subtypeName, expenseType);
-    	if (!subtype.isPresent()) { // Verificar si el Optional está vacío
-            throw new RuntimeException(
-                "Subtipo '" + subtypeName + "' no pertenece al tipo '" + typeName + "'"
-            );
-        }
-    	
-    	expense.setExpenseSubtype(subtype.get());
-    	Expense expenseToSave = expenseRepository.save(expense);
-    	return convertToResponseDTO(expenseToSave);
-    	
+    	// Build expense entity
+        Expense expense = new Expense();
+        expense.setExpenseAmount(requestDTO.getAmount());
+        expense.setExpenseDate(requestDTO.getDate());
+        expense.setExpenseSubtype(subtype); // Set resolved subtype
+        
+        
+     // Resolve user
+        User user = userRepository.findById(requestDTO.getUserId())
+            .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        expense.setUser(user);
+        
+     // Save and convert to DTO
+        Expense savedExpense = expenseRepository.save(expense);
+        return convertToResponseDTO(savedExpense);
     }
     
    

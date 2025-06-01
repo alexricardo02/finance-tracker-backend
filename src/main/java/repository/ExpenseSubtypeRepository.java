@@ -12,7 +12,7 @@ import models.ExpenseType;
 @Repository
 public interface ExpenseSubtypeRepository extends JpaRepository<ExpenseSubtype, Integer> {
 	// Busca subtipos por nombre y tipo
-    Optional<ExpenseSubtype> findBySubtypeNameAndExpenseType(String subtypeName, ExpenseType expenseType);
+    Optional<ExpenseSubtype> findBySubtypeNameAndExpenseType(String subtypeName, String expenseType);
 
  // Lista todos los subtipos de un tipo específico
     List<ExpenseSubtype> findByExpenseType(ExpenseType expenseType);

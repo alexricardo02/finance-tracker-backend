@@ -1,11 +1,14 @@
 package com.example.controllers;
 
-import java.util.List;
+import java.util.List; 
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -16,8 +19,6 @@ import dataTransferObjects.ExpenseRequestDTO;
 import dataTransferObjects.ExpenseResponseDTO;
 import jakarta.validation.Valid;
 import service.ExpenseService;
-import service.ExpenseSubtypeService;
-import service.ExpenseTypeService;
 
 @RestController
 @RequestMapping("/api/expenses")
@@ -33,7 +34,7 @@ public class ExpenseController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ExpenseResponseDTO createExpense(@Valid @RequestBody ExpenseRequestDTO requestDTO) {
-    	return expenseService.saveExpense(null, null, null);
+    	return expenseService.saveExpense(requestDTO); // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     }
     
  // Get all expenses
@@ -41,5 +42,21 @@ public class ExpenseController {
     public List<ExpenseResponseDTO> getAllExpenses(@RequestParam(required = false) Integer userId, @RequestParam(required = false) String month) {
     	return expenseService.getAllExpenses();
     }
+    
+    @PutMapping("/{id}")
+    public ExpenseResponseDTO updateExpense(@PathVariable int id, @Valid @RequestBody ExpenseRequestDTO requestDTO) {
+    	return expenseService.updateExpense(id, requestDTO);
+    	
+    }
+    
+    @PreAuthorize("isAuthenticated()")
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteExpense(@PathVariable int id) {
+    	expenseService.deleteExpense(id);
+    }
+    
+    
+    
     
 }
