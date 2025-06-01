@@ -1,12 +1,11 @@
 package service;
 
 import java.sql.Timestamp;
+
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import dataTransferObjects.IncomeTypeResponseDTO;
 import dataTransferObjects.PasswordChangeDTO;
 import dataTransferObjects.UserProfileDTO;
 import dataTransferObjects.UserRegistrationDTO;
@@ -15,7 +14,6 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import models.Expense;
 import models.Income;
-import models.IncomeType;
 import models.User;
 import repository.UserRepository;
 
@@ -72,8 +70,6 @@ public class UserService {
 	
 	@Transactional
 	public void deleteUser(Integer id) {
-		User user = userRepository.findById(id)
-	            .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
 		userRepository.deleteById(id);
 	}
 	

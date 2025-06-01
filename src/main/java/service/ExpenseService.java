@@ -1,7 +1,6 @@
 package service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,8 +15,6 @@ import models.ExpenseSubtype;
 import models.ExpenseType;
 import models.User;
 import repository.ExpenseRepository;
-import repository.ExpenseSubtypeRepository;
-import repository.ExpenseTypeRepository;
 import repository.UserRepository;
 
 @Service 
@@ -27,17 +24,10 @@ public class ExpenseService {
     private ExpenseRepository expenseRepository;
 	
 	@Autowired UserRepository userRepository;
-	
-	@Autowired
-    private ExpenseSubtypeRepository expenseSubtypeRepository;
-
-    @Autowired
-    private ExpenseTypeRepository expenseTypeRepository;
     
     @Autowired
     private ExpenseSubtypeService expenseSubtypeService; // Injected dependency
     
-    private ExpenseTypeService expenseTypeSerice;
     
     // Helper method to convert Expense → ExpenseResponseDTO
     private ExpenseResponseDTO convertToResponseDTO(Expense expense) {

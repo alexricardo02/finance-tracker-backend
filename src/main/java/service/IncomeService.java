@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import dataTransferObjects.IncomeRequestDTO;
 import dataTransferObjects.IncomeResponseDTO;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import models.Income;
 import models.IncomeType;
@@ -61,9 +62,11 @@ public class IncomeService {
 	            .toList();
 	};
 	
-	public Income getIncomeById(Integer id) {
-		return incomeRepository.findById(id)
-	            .orElseThrow(() -> new RuntimeException("Ingreso no encontrado"));
+	public IncomeResponseDTO  getIncomeById(Integer id) {
+		
+		Income income = incomeRepository.findById(id)
+		        .orElseThrow(() -> new EntityNotFoundException("Income not found with ID: " + id));
+		return convertToResponseDTO(income);
 	}
 	
 	@Transactional
