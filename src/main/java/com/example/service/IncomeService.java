@@ -3,10 +3,12 @@ package com.example.service;
 
 import java.time.LocalDate;
 import java.util.List;
-
-
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.example.dataTransferObjects.IncomeRequestDTO;
@@ -27,8 +29,6 @@ public class IncomeService {
 	
     @Autowired
     private UserRepository userRepository;
-  
-    
 	
 	private IncomeResponseDTO convertToResponseDTO(Income income) {
 		
@@ -44,13 +44,22 @@ public class IncomeService {
 			
     }
 	
+	private Integer getUserIdByUsername(String username) {
+	    return userRepository.findByUsername(username)
+	            .orElseThrow(() -> new RuntimeException("User not found"))
+	            .getUserId();
+	}
+	
 	@Transactional
+	@CacheEvict(value = {"incomes_month", "incomes_type", "incomes_year", "incomes_day", "all_incomes", "incomes_last_7_days", "incomes_last_month", "incomes_last_3_month", "incomes_last_6_months"}, allEntries = true)	
 	public IncomeResponseDTO saveIncome(IncomeRequestDTO requestDTO) {
 		
 		if (requestDTO.getAmount() == null) {
 	        throw new IllegalArgumentException("Amount is required");
 	    }
 	
+		String authName = SecurityContextHolder.getContext().getAuthentication().getName();
+	    System.out.println("LOG: Spring Security dice que el usuario es: " + authName);
 		
 		// 1. Convertir DTO a entidad
         Income income = new Income();
@@ -61,11 +70,13 @@ public class IncomeService {
         income.setDescription(requestDTO.getDescription());
       
         
-        User user = userRepository.findById(requestDTO.getUserId())
+        User user = userRepository.findByUsername(authName)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
             income.setUser(user);
+            
+        System.out.println("LOG: El ID de ese usuario en la DB es: " + user.getUserId());
         
-        
+        income.setUser(user);
         // 3. Guardar en la base de datos
         Income savedIncome = incomeRepository.save(income);
         
@@ -73,13 +84,24 @@ public class IncomeService {
         return convertToResponseDTO(savedIncome);
     }
 
-	
+	@Cacheable(value = "all_incomes", key = "'all'")
 	public List<IncomeResponseDTO> getAllIncomes() {
 		List<Income> incomes = incomeRepository.findAll();
 		return incomes.stream()
 	            .map(income -> convertToResponseDTO(income))
 	            .toList();
 	};
+	
+	public List<IncomeResponseDTO> getIncomesForCurrentUser() {
+		String username = SecurityContextHolder.getContext().getAuthentication().getName();
+		
+		User user = userRepository.findByUsername(username)
+	            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+	
+		List<Income> incomes = incomeRepository.findByUserUserId(user.getUserId());
+		
+		return incomes.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
+	}
 	
 	public IncomeResponseDTO  getIncomeById(Integer id) {
 		
@@ -89,6 +111,7 @@ public class IncomeService {
 	}
 	
 	@Transactional
+	@CacheEvict(value = {"incomes_month", "incomes_type", "incomes_year", "incomes_day", "all_incomes", "incomes_last_7_days", "incomes_last_month", "incomes_last_3_month", "incomes_last_6_months"}, allEntries = true)	
 	public void deleteIncome(Integer id) {
 		if (!incomeRepository.existsById(id)) {
             throw new RuntimeException("Ingreso no encontrado con ID: " + id);
@@ -97,6 +120,7 @@ public class IncomeService {
 	}
 	
 	@Transactional
+	@CacheEvict(value = {"incomes_month", "incomes_type", "incomes_year", "incomes_day", "all_incomes", "incomes_last_7_days", "incomes_last_month", "incomes_last_3_month", "incomes_last_6_months"}, allEntries = true)	
 	public IncomeResponseDTO  updateIncome(Integer incomeId, IncomeRequestDTO incomeRequestDTO) {
 		
 		// 1. Buscar el ingreso existente
@@ -126,107 +150,90 @@ public class IncomeService {
 		
 	}
 
-	
-	public List<IncomeResponseDTO> findByIncomeTypeName(String incomeType) {
-		List<Income> incomes = incomeRepository.findByIncomeTypeName(incomeType);
+	public List<IncomeResponseDTO> findByIncomeTypeName(String incomeType, String username) {
+	    
+		List<Income> incomes = incomeRepository.findByIncomeTypeNameAndUser(incomeType, getUserIdByUsername(username));
 	    return incomes.stream()
 	            .map(income -> convertToResponseDTO(income))
 	            .toList();
 	}
 	
-	public Double getTotalIncomeAmountByType(String incomeType) {
-		return incomeRepository.getTotalIncomeAmountByType(incomeType);
+	@Cacheable(value = "incomes_type", key = "#username + '_' + #incomeType")
+	public Double getTotalIncomeAmountByType(String incomeType, String username) {
+
+		return incomeRepository.getTotalIncomeAmountByTypeAndUser(incomeType, getUserIdByUsername(username));
 	}
 	
-	public Double getTotalIncomeAmountByMonth(String month) {
-		switch(month) {
-    	case "January": 
-    		return incomeRepository.getTotalIncomeAmountByMonth(1);
-    	case "February": 
-    		return incomeRepository.getTotalIncomeAmountByMonth(2);
-    	case "March": 
-    		return incomeRepository.getTotalIncomeAmountByMonth(3);
-    	case "April": 
-    		return incomeRepository.getTotalIncomeAmountByMonth(4);
-    	case "Mai": 
-    		return incomeRepository.getTotalIncomeAmountByMonth(5);
-    	case "June": 
-    		return incomeRepository.getTotalIncomeAmountByMonth(6);
-    	case "July": 
-    		return incomeRepository.getTotalIncomeAmountByMonth(7);
-    	case "August": 
-    		return incomeRepository.getTotalIncomeAmountByMonth(8);
-    	case "September": 
-    		return incomeRepository.getTotalIncomeAmountByMonth(8);
-    	case "October": 
-    		return incomeRepository.getTotalIncomeAmountByMonth(10);
-    	case "November": 
-    		return incomeRepository.getTotalIncomeAmountByMonth(11);
-    	case "December": 
-    		return incomeRepository.getTotalIncomeAmountByMonth(12);
-    	default:
-    		throw new IllegalArgumentException("Wrong month");
-    	}
+	@Cacheable(value = "incomes_month", key = "#username + '_' + #month")
+	public Double getTotalIncomeAmountByMonth(String month, String username) {
+
+		try {
+			int monthNumber = java.time.Month.valueOf(month.toUpperCase()).getValue();
+			return incomeRepository.getTotalIncomeAmountByMonthAndUser(monthNumber, getUserIdByUsername(username));
+			
+		}catch (IllegalArgumentException e) {
+	        throw new IllegalArgumentException("Invalid month: " + month);
+	    }
 	}
 	
-	public double getTotalIncomeAmountByYear(Integer year) {
-		return incomeRepository.getTotalIncomeAmountByYear(year);
+	@Cacheable(value = "incomes_year", key = "#username + '_' + #year")
+	public double getTotalIncomeAmountByYear(Integer year, String username) {
+
+		return incomeRepository.getTotalIncomeAmountByYearAndUser(year, getUserIdByUsername(username));
 	}
 	
-	public Double getTotalIncomeAmounByDay(Integer day) {
-    	switch(day) {
-    	case 1: 
-    		return incomeRepository.getTotalIncomeAmountByDay(1);
-    	case 2: 
-    		return incomeRepository.getTotalIncomeAmountByDay(2);
-    	case 3: 
-    		return incomeRepository.getTotalIncomeAmountByDay(3);
-    	case 4: 
-    		return incomeRepository.getTotalIncomeAmountByDay(4);
-    	case 5: 
-    		return incomeRepository.getTotalIncomeAmountByDay(5);
-    	case 6: 
-    		return incomeRepository.getTotalIncomeAmountByDay(6);
-    	case 7: 
-    		return incomeRepository.getTotalIncomeAmountByDay(7);
-    	default:
-    		throw new IllegalArgumentException("Wrong day");
-    	}
-    }
+	@Cacheable(value = "incomes_day", key = "#username + '_' + #day")
+	public Double getTotalIncomeAmounByDay(Integer day, String username) {
+	    
+		if (day == null || day < 1 || day > 31) {
+	        throw new IllegalArgumentException("Invalid day");
+	    }
+	    
+	    return incomeRepository.getTotalIncomeAmountByDayAndUser(day, getUserIdByUsername(username));
+	}
 	
-	
-	public Double getTotalIncomesLast7DaysInclusive(LocalDate today) {
+	@Cacheable(value = "incomes_last_7_days", key = "#username + '_' + #today")
+	public Double getTotalIncomesLast7DaysInclusive(LocalDate today, String username) {
+
     	LocalDate start = today.minusDays(6);
     	LocalDate end = today;
-    	Double result = incomeRepository.getTotalIncomeAmountBetween(start, end);
+    	Double result = incomeRepository.getTotalIncomeAmountBetweenAndUser(start, end, getUserIdByUsername(username));
     	return result == null ? 0.0 : result;
     }
     
-    public Double getTotalIncomesLastMonths(LocalDate today) {
+	@Cacheable(value = "incomes_last_month", key = "#username + '_' + #today")
+    public Double getTotalIncomesLastMonths(LocalDate today, String username) {
+
     	LocalDate start = today.minusMonths(1);
     	LocalDate end = today;
-    	Double result = incomeRepository.getTotalIncomeAmountBetween(start, end);
+    	Double result = incomeRepository.getTotalIncomeAmountBetweenAndUser(start, end, getUserIdByUsername(username));
     	return result == null ? 0.0 : result;
     }
     
-    public Double getTotalIncomesLast3Months(LocalDate today) {
+	@Cacheable(value = "incomes_last_3_month", key = "#username + '_' + #today")
+    public Double getTotalIncomesLast3Months(LocalDate today, String username) {
+
     	LocalDate start = today.minusMonths(3);
     	LocalDate end = today;
-    	Double result = incomeRepository.getTotalIncomeAmountBetween(start, end);
+    	Double result = incomeRepository.getTotalIncomeAmountBetweenAndUser(start, end, getUserIdByUsername(username));
     	return result == null ? 0.0 : result;
     }
     
-    public Double getTotalIncomesLast6Months(LocalDate today) {
+    @Cacheable(value = "incomes_last_6_months", key = "#username + '_' + #today")
+    public Double getTotalIncomesLast6Months(LocalDate today, String username) {
+
     	LocalDate start = today.minusMonths(6);
     	LocalDate end = today;
-    	Double result = incomeRepository.getTotalIncomeAmountBetween(start, end);
+    	Double result = incomeRepository.getTotalIncomeAmountBetweenAndUser(start, end, getUserIdByUsername(username));
     	return result == null ? 0.0 : result;
     }
     
-    public Double getTotalIncomesLastYear(LocalDate today) {
+    @Cacheable(value = "incomes_last_year", key = "#username + '_' + #today")
+    public Double getTotalIncomesLastYear(LocalDate today, String username) {
+
     	LocalDate start = today.minusYears(1);
     	LocalDate end = today;
-    	Double result = incomeRepository.getTotalIncomeAmountBetween(start, end);
+    	Double result = incomeRepository.getTotalIncomeAmountBetweenAndUser(start, end, getUserIdByUsername(username));
     	return result == null ? 0.0 : result;
     }   
 

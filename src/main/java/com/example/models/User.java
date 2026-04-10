@@ -20,13 +20,13 @@ public class User {
 	@Column(name="user_id", nullable = false)
 	private int userId;
 	
-	@Column(name="username", nullable = false)
+	@Column(name="username", nullable = false, unique = true)
     private String username;
 	
 	@Column(name="password_hash", nullable = false)
     private String passwordHash;
 	
-	@Column(name="email", nullable = false)
+	@Column(name="email", nullable = false, unique = true)
     private String email;
 	
 	@Column(name="creation_date", nullable = false)

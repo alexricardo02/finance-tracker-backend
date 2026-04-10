@@ -47,11 +47,8 @@ public class UserRegistrationDTO {
 		this.password = password;
 		this.email = email;
 	}
+	
+	public UserRegistrationDTO() {}
 
-	public UserRegistrationDTO() {
-		super();
-	}
-
-    
-
+   
 }

@@ -6,7 +6,13 @@ import java.time.LocalDate;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name="expenses")
+@Table(name="expenses",
+		indexes = {
+				@Index(name = "idx_expense_user", columnList = "user_id"),
+				@Index(name = "idx_expense_type", columnList = "type"),
+				@Index(name = "idx_expense_date", columnList = "date")
+	}
+)
 public class Expense {
 	
 	@Id
@@ -29,8 +35,8 @@ public class Expense {
 	@Column(name = "expense_description", columnDefinition = "text")
     private String description;
     
-    @ManyToOne
-	@JoinColumn(name="user_id")
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name="user_id", nullable = false)
     private User user;
    
 

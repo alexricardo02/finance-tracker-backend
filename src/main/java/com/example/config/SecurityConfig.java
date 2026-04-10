@@ -1,27 +1,47 @@
 package com.example.config;
 
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import com.example.security.JwtRequestFilter;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+	
+	@Autowired
+    private JwtRequestFilter jwtRequestFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // Deshabilita CSRF (no necesitas tokens en un API sin formularios)
-            .csrf(csrf -> csrf.disable())
-            // Permite todas las peticiones sin autenticación
-            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-            // Puedes omitir .httpBasic() o formLogin() porque no hay auth
-            ;
+        .csrf(csrf -> csrf.disable())
+        .cors(Customizer.withDefaults()) 
+        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // App sin estado (Stateless)
+        .authorizeHttpRequests(auth -> auth
+            // RUTAS PÚBLICAS: Cualquiera puede entrar
+        	.requestMatchers("/api/users/login", "/api/users/login/", "/api/users/register", "/api/users/register/").permitAll()
+            
+            // RUTAS PRIVADAS: Requieren Token válido
+            .requestMatchers("/api/incomes/**", "/api/expenses/**").authenticated()
+            
+            .anyRequest().authenticated()
+        );
+
+        // AÑADIMOS EL FILTRO: Revisa el JWT antes de intentar autenticar
+        http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+        
         return http.build();
     }
     

@@ -8,7 +8,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -30,7 +33,6 @@ public class ExpenseService {
 	
 	@Autowired UserRepository userRepository;
     
-    
     // Helper method to convert Expense → ExpenseResponseDTO
     private ExpenseResponseDTO convertToResponseDTO(Expense expense) {
         return new ExpenseResponseDTO(
@@ -43,9 +45,32 @@ public class ExpenseService {
             expense.getUser().getUserId()
         );
     }
+    
+    private Integer getUserIdByUsername(String username) {
+	    return userRepository.findByUsername(username)
+	            .orElseThrow(() -> new RuntimeException("User not found"))
+	            .getUserId();
+	}
 	
+	
+    public List<ExpenseResponseDTO> getExpensesForCurrentUser() {
+        // 1. Le preguntamos a Spring Security: "¿Quién está logueado?"
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        // 2. Buscamos a ese usuario en la DB
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // 3. Usamos la nueva función del repositorio
+        List<Expense> expenses = expenseRepository.findByUserUserId(user.getUserId());
+
+        // 4. Mapeamos a DTO (esto ya lo sabías hacer)
+        return expenses.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
+    }
+    
     // Método para crear un Expense con validación de tipo y subtipo
     @Transactional
+	@CacheEvict(value = {"all_expenses_types", "expenses_type", "expenses_last_7_days", "expenses_last_months", "expenses_last_3_months", "expenses_last_6_months", "expenses_last_year", "expenses_day", "expenses_month", "expenses_year"}, allEntries = true)	
     public ExpenseResponseDTO saveExpense(ExpenseRequestDTO requestDTO) {
     	
     	if (requestDTO == null) {
@@ -62,6 +87,8 @@ public class ExpenseService {
                     "ExpenseSubtype not found for typeName=" + requestDTO.getTypeName());
         }
     	
+    	String authName = SecurityContextHolder.getContext().getAuthentication().getName();
+    	
     	
     	// Build expense entity
         Expense expense = new Expense();
@@ -71,10 +98,13 @@ public class ExpenseService {
         expense.setExpenseType(requestDTO.getTypeName()); // Set resolved subtype
         expense.setExpenseDescription(requestDTO.getDescription());
         
+        
      // Resolve user
-        User user = userRepository.findById(requestDTO.getUserId())
+        User user = userRepository.findByUsername(authName)
             .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        
         expense.setUser(user);
+        
         
      // Save and convert to DTO
         Expense savedExpense = expenseRepository.save(expense);
@@ -87,6 +117,8 @@ public class ExpenseService {
     	return expenses.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
     }
     
+    
+    @Cacheable(value = "all_expenses_types", key = "'all'")
     public List<String> getAllExpenseTypes() {
     	return expenseRepository.findAllExpenseTypes();
     }
@@ -97,11 +129,13 @@ public class ExpenseService {
     }
 
     @Transactional
+	@CacheEvict(value = {"all_expenses_types", "expenses_type", "expenses_last_7_days", "expenses_last_months", "expenses_last_3_months", "expenses_last_6_months", "expenses_last_year", "expenses_day", "expenses_month", "expenses_year"}, allEntries = true)	
     public void deleteExpense(int id) {
         expenseRepository.deleteById(id);
     }
     
     @Transactional
+	@CacheEvict(value = {"all_expenses_types", "expenses_type", "expenses_last_7_days", "expenses_last_months", "expenses_last_3_months", "expenses_last_6_months", "expenses_last_year", "expenses_day", "expenses_month", "expenses_year"}, allEntries = true)	
     public ExpenseResponseDTO  updateExpense(int expenseId, ExpenseRequestDTO requestDTO) {
     	
     	Expense existingExpense = expenseRepository.findById(expenseId).orElseThrow(() -> new IllegalArgumentException("Expense not found"));
@@ -114,116 +148,92 @@ public class ExpenseService {
         return convertToResponseDTO(updatedExpense);
     }
 
-    public List<ExpenseResponseDTO> getExpenseByType(String expenseType) {
+    public List<ExpenseResponseDTO> getExpenseByTypeAndUser(String expenseType, String username) {
 
     	if (expenseType == null) {
             throw new IllegalArgumentException("ExpenseType no puede ser nulo");
         }
-    	List<Expense> expenses = expenseRepository.findByExpenseTypeName(expenseType);
+    	List<Expense> expenses = expenseRepository.findByExpenseTypeNameAndUser(expenseType, getUserIdByUsername(username));
     	
     	return expenses.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
     }
     
-    
-    public Double getTotalExpenseAmountByType(String expenseType) {
-    	return expenseRepository.getTotalExpenseAmountByType(expenseType);
+    @Cacheable(value = "expenses_type", key = "#username + '_'+ #expenseType")
+    public Double getTotalExpenseAmountByTypeAndUser(String expenseType, String username) {
+    	return expenseRepository.getTotalExpenseAmountByTypeAndUser(expenseType, getUserIdByUsername(username));
     }
     
-    public Double getTotalExpensesLast7DaysInclusive(LocalDate today) {
+    @Cacheable(value= "expenses_last_7_days", key="#username + '_' + #today")
+    public Double getTotalExpensesLast7DaysInclusiveAndUser(LocalDate today, String username) {
     	LocalDate start = today.minusDays(6);
     	LocalDate end = today;
-    	Double result = expenseRepository.getTotalExpenseAmountBetween(start, end);
+    	Double result = expenseRepository.getTotalExpenseAmountBetweenAndUser(start, end, getUserIdByUsername(username));
     	return result == null ? 0.0 : result;
     }
     
-    public Double getTotalExpensesLastMonths(LocalDate today) {
+    @Cacheable(value= "expenses_last_months", key="#username + '_' + #today")
+    public Double getTotalExpensesLastMonthsAndUser(LocalDate today, String username) {
     	LocalDate start = today.minusMonths(1);
     	LocalDate end = today;
-    	Double result = expenseRepository.getTotalExpenseAmountBetween(start, end);
+    	Double result = expenseRepository.getTotalExpenseAmountBetweenAndUser(start, end, getUserIdByUsername(username));
     	return result == null ? 0.0 : result;
     }
     
-    public Double getTotalExpensesLast3Months(LocalDate today) {
+    @Cacheable(value= "expenses_last_3_months", key="#username + '_' + #today")
+    public Double getTotalExpensesLast3MonthsAndUser(LocalDate today, String username) {
     	LocalDate start = today.minusMonths(3);
     	LocalDate end = today;
-    	Double result = expenseRepository.getTotalExpenseAmountBetween(start, end);
+    	Double result = expenseRepository.getTotalExpenseAmountBetweenAndUser(start, end, getUserIdByUsername(username));
     	return result == null ? 0.0 : result;
     }
     
-    public Double getTotalExpensesLast6Months(LocalDate today) {
+    @Cacheable(value= "expenses_last_6_months", key="#username + '_' + #today")
+    public Double getTotalExpensesLast6MonthsAndUser(LocalDate today, String username) {
     	LocalDate start = today.minusMonths(6);
     	LocalDate end = today;
-    	Double result = expenseRepository.getTotalExpenseAmountBetween(start, end);
+    	Double result = expenseRepository.getTotalExpenseAmountBetweenAndUser(start, end, getUserIdByUsername(username));
     	return result == null ? 0.0 : result;
     }
     
-    public Double getTotalExpensesLastYear(LocalDate today) {
+    @Cacheable(value= "expenses_last_year", key="#username + '_' + #today")
+    public Double getTotalExpensesLastYearAndUser(LocalDate today, String username) {
     	LocalDate start = today.minusYears(1);
     	LocalDate end = today;
-    	Double result = expenseRepository.getTotalExpenseAmountBetween(start, end);
+    	Double result = expenseRepository.getTotalExpenseAmountBetweenAndUser(start, end, getUserIdByUsername(username));
     	return result == null ? 0.0 : result;
     }    
     
+    //Redis
+    @Cacheable(value = "expenses_day", key = "#username + '_'+ #day")
+    public Double getTotalExpenseAmounByDayAndUser(Integer day, String username) {
+    	
+    	if (day == null || day < 1 || day > 31) {
+	        throw new IllegalArgumentException("Invalid day");
+	    }
+    	
+    	return expenseRepository.getTotalExpenseAmountByDayAndUser(day, getUserIdByUsername(username));
+  
+    }
     
-    
-    public Double getTotalExpenseAmounByDay(Integer day) {
-    	switch(day) {
-    	case 1: 
-    		return expenseRepository.getTotalExpenseAmountByDay(1);
-    	case 2: 
-    		return expenseRepository.getTotalExpenseAmountByDay(2);
-    	case 3: 
-    		return expenseRepository.getTotalExpenseAmountByDay(3);
-    	case 4: 
-    		return expenseRepository.getTotalExpenseAmountByDay(4);
-    	case 5: 
-    		return expenseRepository.getTotalExpenseAmountByDay(5);
-    	case 6: 
-    		return expenseRepository.getTotalExpenseAmountByDay(6);
-    	case 7: 
-    		return expenseRepository.getTotalExpenseAmountByDay(7);
-    	default:
-    		throw new IllegalArgumentException("Wrong day");
+    //Redis
+    @Cacheable(value= "expenses_month", key="#username + '_' + #month")
+    public Double getTotalExpenseAmounByMonthAndUser(String month, String username) {
+    	
+    	try {
+    		int monthNumber = java.time.Month.valueOf(month.toUpperCase()).getValue();
+    		return expenseRepository.getTotalExpenseAmountByMonthAndUser(monthNumber, getUserIdByUsername(username));
+    	} catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid month: " + month);
     	}
     }
     
-    
-    public Double getTotalExpenseAmounByMonth(String month) {
-    	switch(month) {
-    	case "January": 
-    		return expenseRepository.getTotalExpenseAmountByMonth(1);
-    	case "February": 
-    		return expenseRepository.getTotalExpenseAmountByMonth(2);
-    	case "March": 
-    		return expenseRepository.getTotalExpenseAmountByMonth(3);
-    	case "April": 
-    		return expenseRepository.getTotalExpenseAmountByMonth(4);
-    	case "Mai": 
-    		return expenseRepository.getTotalExpenseAmountByMonth(5);
-    	case "June": 
-    		return expenseRepository.getTotalExpenseAmountByMonth(6);
-    	case "July": 
-    		return expenseRepository.getTotalExpenseAmountByMonth(7);
-    	case "August": 
-    		return expenseRepository.getTotalExpenseAmountByMonth(8);
-    	case "September": 
-    		return expenseRepository.getTotalExpenseAmountByMonth(8);
-    	case "October": 
-    		return expenseRepository.getTotalExpenseAmountByMonth(10);
-    	case "November": 
-    		return expenseRepository.getTotalExpenseAmountByMonth(11);
-    	case "December": 
-    		return expenseRepository.getTotalExpenseAmountByMonth(12);
-    	default:
-    		throw new IllegalArgumentException("Wrong month");
-    	}
-    }
-    
-    public Double getTotalExpenseAmounByYear(Integer year) {
+    // Redis
+    @Cacheable(value = "expenses_year", key = "#username + '_' + #year")
+    public Double getTotalExpenseAmounByYearAndUser(Integer year, String username) {
     	if (year == null) {
     		throw new IllegalArgumentException("El año no puede ser nulo");
     	}
-    	return expenseRepository.getTotalExpenseAmountByYear(year);
+    	return expenseRepository.getTotalExpenseAmountByYearAndUser(year, getUserIdByUsername(username));
     }
     
     

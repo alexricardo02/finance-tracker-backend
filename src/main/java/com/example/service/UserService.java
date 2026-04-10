@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.example.dataTransferObjects.LoginRequestDTO;
 import com.example.dataTransferObjects.PasswordChangeDTO;
 import com.example.dataTransferObjects.UserProfileDTO;
 import com.example.dataTransferObjects.UserRegistrationDTO;
@@ -143,4 +144,21 @@ public class UserService {
 	private boolean isValidEmail(String email) {
         return email != null && email.matches("^[A-Za-z0-9+_.-]+@(.+)$");
     }
+	
+	
+	public UserProfileDTO login(LoginRequestDTO loginDTO) {
+	    // 1. Buscamos al usuario por su username
+	    // El repositorio devuelve un Optional<User>, por eso usamos .orElseThrow
+	    User user = userRepository.findByUsername(loginDTO.getUsername())
+	            .orElseThrow(() -> new SecurityException("Usuario o contraseña incorrectos"));
+
+	    // 2. Comparamos la contraseña en texto plano con el hash de la base de datos
+	    // Usamos el passwordEncoder que ya tienes inyectado
+	    if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword_hash())) {
+	        throw new SecurityException("Usuario o contraseña incorrectos");
+	    }
+
+	    // 3. Si la clave es correcta, convertimos el User a UserProfileDTO y lo devolvemos
+	    return convertToProfileDTO(user);
+	}
 }

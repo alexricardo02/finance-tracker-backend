@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,10 +16,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import dataTransferObjects.IncomeRequestDTO;
-import dataTransferObjects.IncomeResponseDTO;
+import com.example.dataTransferObjects.IncomeRequestDTO;
+import com.example.dataTransferObjects.IncomeResponseDTO;
 import jakarta.validation.Valid;
-import service.IncomeService;
+import com.example.service.IncomeService;
 
 
 @RestController
@@ -34,20 +35,20 @@ public class IncomeController {
 	
 	@PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-	public IncomeResponseDTO createIncome(IncomeRequestDTO requestDTO) {
+	public IncomeResponseDTO createIncome(@Valid @RequestBody IncomeRequestDTO requestDTO) {
 		return incomeService.saveIncome(requestDTO);
 	}
 	
 	@GetMapping
 	public List<IncomeResponseDTO> getAllIncomes(@RequestParam(required = false) Integer userId, @RequestParam(required = false) String month) {
-		return incomeService.getAllIncomes();
+		return incomeService.getIncomesForCurrentUser();
 	}
 	
 	@GetMapping("/{id}")
     public IncomeResponseDTO getIncomeById(@PathVariable int id) {
         return incomeService.getIncomeById(id);
     }
-	
+
 	@PutMapping("/{id}")
 	public IncomeResponseDTO updateIncome(@PathVariable int id, @Valid @RequestBody IncomeRequestDTO requestDTO) {
     	return incomeService.updateIncome(id, requestDTO);
@@ -66,10 +67,15 @@ public class IncomeController {
         @RequestParam String incomeType,
         @RequestParam(required = false) Integer userId
     ) {
-        return incomeService.findByIncomeTypeName(incomeType);
+    	String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return incomeService.findByIncomeTypeName(incomeType, username);
     }
-	
-	// implementar el resto de funciones
+    
+    @GetMapping("/total-month")
+    public Double getTotalByMonth(@RequestParam String month) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return incomeService.getTotalIncomeAmountByMonth(month, username);
+    }
 	
 
 }

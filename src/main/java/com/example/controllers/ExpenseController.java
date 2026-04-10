@@ -2,6 +2,7 @@ package com.example.controllers;
 
 import java.util.List; 
 
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -15,10 +16,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import dataTransferObjects.ExpenseRequestDTO;
-import dataTransferObjects.ExpenseResponseDTO;
+import com.example.dataTransferObjects.*;
 import jakarta.validation.Valid;
-import service.ExpenseService;
+import com.example.service.*;
 
 @RestController
 @RequestMapping("/api/expenses")
@@ -40,7 +40,7 @@ public class ExpenseController {
  // Get all expenses
     @GetMapping
     public List<ExpenseResponseDTO> getAllExpenses(@RequestParam(required = false) Integer userId, @RequestParam(required = false) String month) {
-    	return expenseService.getAllExpenses();
+    	return expenseService.getExpensesForCurrentUser();
     }
     
     @PutMapping("/{id}")
