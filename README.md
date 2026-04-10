@@ -140,8 +140,8 @@ Instead of loading thousands of Java objects into memory to calculate totals, th
 * **3.** For subsequent requests, the client must include this token in the HTTP Header:
 ```HTTP
 Authorization: Bearer <your_jwt_token>
-The JwtRequestFilter intercepts incoming requests, validates the token signature/expiration, and extracts the username to establish the SecurityContext.
 ```
+* **4.** The JwtRequestFilter intercepts incoming requests, validates the token signature/expiration, and extracts the username to establish the SecurityContext.
 
 ---
 
