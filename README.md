@@ -62,6 +62,6 @@ The system operates on three main entities:
 | `GET` | `/api/incomes` | Get all incomes for current user | Yes (JWT) |
 | `GET` | `/api/incomes/{id}` | Get specific income by ID | Yes (JWT) |
 | `PUT` | `/api/incomes/{id}` | Update an existing income | Yes (JWT) |
-| `DELETE`| `/api/incomes/{id} |
+| `DELETE`| `/api/incomes/{id} | Delete an income | Yes (JWT) |
 | `GET` | `/api/incomes/by-type` | Get incomes filtered by type | Yes (JWT) |
 | `GET` | `/api/incomes/total-month` | Get aggregated total by month | Yes (JWT) |
