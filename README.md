@@ -120,7 +120,7 @@ jwt.secret=your_super_secret_key_here
 ### 3. Build and Run
 Clone the repository and build the project using Maven:
 ```bash
-git clone [https://github.com/yourusername/finance-tracker-api.git](https://github.com/yourusername/finance-tracker-api.git)
+git clone [https://github.com/yourusername/finance-tracker-api.git](https://github.com/yourusername/finance-tracker-backend.git)
 cd finance-tracker-api
 mvn clean install
 mvn spring-boot:run
