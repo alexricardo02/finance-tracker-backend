@@ -1,0 +1,50 @@
+name: Spring Boot CI
+
+# 'push' to 'main'
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    # Postgres container
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: dev_password_123
+          POSTGRES_DB: finance_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    # 1. 
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    # 2. JDK 17
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+
+    # 3. 
+    - name: Build and Test with Maven
+      env:
+        DB_URL: jdbc:postgresql://localhost:5432/finance_db
+        DB_USERNAME: postgres
+        DB_PASSWORD: whatulookingfor
+        JWT_SECRET: super_secret_test_key_for_github_actions_only
+      run: mvn clean verify
