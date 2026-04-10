@@ -87,12 +87,11 @@ The system operates on three main entities:
 * PostgreSQL installed and running
 * Docker Desktop (for Redis)
 
-### 1. Start Redis Server
-To run the caching layer, spin up a Redis container using Docker:
+### 1. Start Infrastructure (Database & Cache)
+This project uses Docker Compose to manage its dependencies. To spin up PostgreSQL and Redis, simply run:
 ```bash
-docker run --name finance-redis -p 6379:6379 -d redis
+docker-compose up -d
 ```
-
 
 ### 2. Configure Database and Application Properties
 Create an application.properties (or .yml) file in src/main/resources and configure your environment variables:
