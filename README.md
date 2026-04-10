@@ -22,6 +22,8 @@ A robust, high-performance RESTful API built with Spring Boot for tracking perso
 * **Database:** PostgreSQL (Relational DB)
 * **Caching Layer:** Redis (In-memory DB via Docker)
 * **Security:** Spring Security, JWT (io.jsonwebtoken)
+* **Infrastructure:** Docker & Docker Compose
+* **CI/CD:** GitHub Actions
 * **Build Tool:** Maven
 
 ### 🏗️ System Design Highlights
