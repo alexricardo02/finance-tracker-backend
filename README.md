@@ -145,34 +145,7 @@ Authorization: Bearer <your_jwt_token>
 
 ---
 
-## 🗄️ Database Schema Overview
-The system operates on three main entities:
-
-* **Users:** Stores authentication credentials, hashed passwords, and creation dates.
-* **Incomes:** Records money coming in. Belongs to a User. Contains amount, currency, date, type, and description.
-* **Expenses:** Records money going out. Belongs to a User. Contains amount, currency, date, type, and description.
-
-*(A One-to-Many relationship exists between User -> Incomes and User -> Expenses, utilizing Lazy Fetching for memory efficiency).*
-
----
-
-## 📡 API Endpoints Reference
-### 🔐 Authentication (/api/users)
-| Method | Endpoint | Description | Auth Required |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/users/register` | Register a new user | ❌ No |
-| `POST` | `/api/users/login` | Authenticate and get JWT | ❌ No |
-
-### 💰 Incomes (/api/incomes)
-| Method | Endpoint | Description | Auth Required |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/users/register` | Get all incomes for current user | ✅ Yes |
-| `POST` | `/api/users/login` | Add a new income record | ✅ Yes |
-| `GET` | `/api/incomes/total` | Calculate total income amount | ✅ Yes |
-
-### 💸 Expenses (/api/expenses)
-| Method | Endpoint | Description | Auth Required |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/expenses` | Get all expenses for current user | ✅ Yes |
-| `POST` | `/api/expenses` | Add a new expense record | ✅ Yes |
-| `GET` | `/api/expenses/total` | Calculate total expense amount | ✅ Yes |
+## 🗺️ Roadmap / Future Improvements
+* **[ ]** Rate Limiting (Bucket4j): Implement Token Bucket algorithm to protect the /login and POST endpoints against Brute Force and DDoS attacks.
+* **[ ]** Pagination & Sorting: Implement Spring Data Pageable for /api/expenses and /api/incomes to handle massive datasets gracefully.
+* **[ ]** Global Exception Handler: Implement @ControllerAdvice to standardize error response payloads (e.g., 404 Not Found, 400 Bad Request) across the entire application.
