@@ -10,7 +10,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**") // Aplica a todas las rutas que empiecen con /api/
-                .allowedOrigins("http://localhost:3000") // El puerto de tu Next.js
+                .allowedOrigins("http://localhost:3000", "https://expenses-incomes-frontend.vercel.app") // El puerto de tu Next.js
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);
