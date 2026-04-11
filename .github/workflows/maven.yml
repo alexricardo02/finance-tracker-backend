@@ -1,7 +1,5 @@
 name: Spring Boot CI
 
-# Nota: Verifica si tu rama en GitHub se llama 'main' o 'master'. 
-# Lo dejé en 'master' como lo tenías, pero si es 'main', cámbialo.
 on:
   push:
     branches: [ "master" ]
@@ -12,7 +10,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    # Aquí levantamos las bases de datos temporales para las pruebas
     services:
       postgres:
         image: postgres:15-alpine
@@ -28,7 +25,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
           
-      # 👉 ¡NUEVO! Levantamos un Redis de prueba
       redis:
         image: redis:7-alpine
         ports:
@@ -51,8 +47,7 @@ jobs:
         DB_USERNAME: postgres
         DB_PASSWORD: whatulookingfor
         JWT_SECRET: super_secret_test_key_for_github_actions_only
-        # 👉 ¡NUEVO! Le decimos a Spring Boot dónde está el Redis de prueba
         REDIS_HOST: localhost
         REDIS_PORT: 6379
-        REDIS_PASSWORD: "" # El Redis de prueba no usa contraseña
+        REDIS_PASSWORD: ""
       run: mvn clean verify
