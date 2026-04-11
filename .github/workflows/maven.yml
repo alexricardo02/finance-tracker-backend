@@ -1,6 +1,7 @@
 name: Spring Boot CI
 
-# 'push' to 'main'
+# Nota: Verifica si tu rama en GitHub se llama 'main' o 'master'. 
+# Lo dejé en 'master' como lo tenías, pero si es 'main', cámbialo.
 on:
   push:
     branches: [ "master" ]
@@ -11,7 +12,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    # Postgres container
+    # Aquí levantamos las bases de datos temporales para las pruebas
     services:
       postgres:
         image: postgres:15-alpine
@@ -26,13 +27,17 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+          
+      # 👉 ¡NUEVO! Levantamos un Redis de prueba
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
 
     steps:
-    # 1. 
     - name: Checkout Code
       uses: actions/checkout@v3
 
-    # 2. JDK 17
     - name: Set up JDK 17
       uses: actions/setup-java@v3
       with:
@@ -40,11 +45,14 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
-    # 3. 
     - name: Build and Test with Maven
       env:
         DB_URL: jdbc:postgresql://localhost:5432/finance_db
         DB_USERNAME: postgres
         DB_PASSWORD: whatulookingfor
         JWT_SECRET: super_secret_test_key_for_github_actions_only
+        # 👉 ¡NUEVO! Le decimos a Spring Boot dónde está el Redis de prueba
+        REDIS_HOST: localhost
+        REDIS_PORT: 6379
+        REDIS_PASSWORD: "" # El Redis de prueba no usa contraseña
       run: mvn clean verify
