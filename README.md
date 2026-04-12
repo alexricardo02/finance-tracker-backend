@@ -19,11 +19,11 @@ A robust, high-performance RESTful API built with Spring Boot for tracking perso
 
 ## 🛠️ Tech Stack & Architecture
 
-* * **Framework:** Java 17, Spring Boot, Spring Web
+* **Framework:** Java 17, Spring Boot, Spring Web
 * **Persistence:** Spring Data JPA, Hibernate
-* **Database:** Serverless PostgreSQL, hosted on [Neon.tech]
-* **Caching Layer:** Serverless Redis, hosted on [Upstash]
-* **DevOps / Cloud:** Dockerized deployment on [Render], CI/CD pipelines via GitHub Actions.
+* **Database:** Serverless PostgreSQL, hosted on Neon.tech
+* **Caching Layer:** Serverless Redis, hosted on Upstash
+* **DevOps / Cloud:** Dockerized deployment on Render, CI/CD pipelines via GitHub Actions.
 
 ### 🏗️ System Design Highlights
 
