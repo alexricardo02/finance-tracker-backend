@@ -3,7 +3,7 @@
 A robust, high-performance RESTful API built with Spring Boot for tracking personal expenses and incomes. This backend system is designed with a strong focus on **scalability, security, and performance optimization**, featuring JWT-based authentication, an isolated multi-tenant architecture (user data privacy), and high-speed data retrieval using Redis caching.
 
 🌍 **Live Frontend (Next.js):** [Insert your Vercel URL here]
-⚙️ **Live API Base URL:** (https://finance-tracker-backend-71t9.onrender.com/api](https://expenses-incomes-frontend.vercel.app/)
+⚙️ **Live API Base URL:** ((https://expenses-incomes-frontend.vercel.app/)
 
 ---
 
