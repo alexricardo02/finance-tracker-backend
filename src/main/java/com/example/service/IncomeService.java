@@ -51,7 +51,7 @@ public class IncomeService {
 	}
 	
 	@Transactional
-	@CacheEvict(value = {"incomes_month", "incomes_type", "incomes_year", "incomes_day", "all_incomes", "incomes_last_7_days", "incomes_last_month", "incomes_last_3_month", "incomes_last_6_months"}, allEntries = true)	
+	@CacheEvict(value = {"incomes_month", "incomes_type", "incomes_year", "incomes_day", "all_incomes", "incomes_last_7_days", "incomes_last_month", "incomes_last_3_month", "incomes_last_6_months", "incomes_last_year"}, allEntries = true)	
 	public IncomeResponseDTO saveIncome(IncomeRequestDTO requestDTO) {
 		
 		if (requestDTO.getAmount() == null) {
@@ -111,7 +111,7 @@ public class IncomeService {
 	}
 	
 	@Transactional
-	@CacheEvict(value = {"incomes_month", "incomes_type", "incomes_year", "incomes_day", "all_incomes", "incomes_last_7_days", "incomes_last_month", "incomes_last_3_month", "incomes_last_6_months"}, allEntries = true)	
+	@CacheEvict(value = {"incomes_month", "incomes_type", "incomes_year", "incomes_day", "all_incomes", "incomes_last_7_days", "incomes_last_month", "incomes_last_3_month", "incomes_last_6_months", "incomes_last_year"}, allEntries = true)	
 	public void deleteIncome(Integer id) {
 		if (!incomeRepository.existsById(id)) {
             throw new RuntimeException("Ingreso no encontrado con ID: " + id);
@@ -120,7 +120,7 @@ public class IncomeService {
 	}
 	
 	@Transactional
-	@CacheEvict(value = {"incomes_month", "incomes_type", "incomes_year", "incomes_day", "all_incomes", "incomes_last_7_days", "incomes_last_month", "incomes_last_3_month", "incomes_last_6_months"}, allEntries = true)	
+	@CacheEvict(value = {"incomes_month", "incomes_type", "incomes_year", "incomes_day", "all_incomes", "incomes_last_7_days", "incomes_last_month", "incomes_last_3_month", "incomes_last_6_months", "incomes_last_year"}, allEntries = true)	
 	public IncomeResponseDTO  updateIncome(Integer incomeId, IncomeRequestDTO incomeRequestDTO) {
 		
 		// 1. Buscar el ingreso existente
