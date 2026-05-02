@@ -2,24 +2,27 @@ package com.example.security;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Refill;
+import io.github.bucket4j.BucketConfiguration;
+import io.github.bucket4j.distributed.proxy.ProxyManager;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 @Component
 public class RateLimitFilter extends OncePerRequestFilter{
-	// Bucket for the ips
-    private final Map<String, Bucket> cache = new ConcurrentHashMap<>();
+	
+	@Autowired
+    private ProxyManager<byte[]> proxyManager;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -31,32 +34,35 @@ public class RateLimitFilter extends OncePerRequestFilter{
             // 1. Identify user
             String ip = getClientIP(request);
 
-            // 2. Search user bucket
-            Bucket bucket = cache.computeIfAbsent(ip, this::createNewBucket);
+            byte[] key = ("rate_limit:" + ip).getBytes();
+            
+            Supplier<BucketConfiguration> configSupplier = getConfigSupplierForLogin();
+            
+            Bucket bucket = proxyManager.builder().build(key, configSupplier);
 
-            // 3. 1 Token
             if (!bucket.tryConsume(1)) {
                 response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-                response.getWriter().write("Too many login attempts. Please try again later.");
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\": \"Too many login attempts. Please try again later.\"}");
                 return;
             }
         }
 
         filterChain.doFilter(request, response);
     }
-
-    // Bucket rules
-    private Bucket createNewBucket(String key) {
-        // Rule: max 5 tokens per minute and refill
-        Bandwidth limit = Bandwidth.builder()
-                .capacity(5)
-                .refillGreedy(5, Duration.ofMinutes(1))
-                .build();
-
-        return Bucket.builder()
-                .addLimit(limit)
-                .build();
+    
+    private Supplier<BucketConfiguration> getConfigSupplierForLogin() {
+        return () -> {
+            Bandwidth limit = Bandwidth.builder()
+                    .capacity(5)
+                    .refillGreedy(5, Duration.ofMinutes(1))
+                    .build();
+            return BucketConfiguration.builder()
+                    .addLimit(limit)
+                    .build();
+        };
     }
+    
 
     private String getClientIP(HttpServletRequest request) {
         String xfHeader = request.getHeader("X-Forwarded-For");
