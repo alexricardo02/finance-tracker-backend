@@ -3,7 +3,9 @@ package com.example.controllers;
 import java.util.List; 
 
 
+
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,8 +41,9 @@ public class ExpenseController {
     
  // Get all expenses
     @GetMapping
-    public List<ExpenseResponseDTO> getAllExpenses(@RequestParam(required = false) Integer userId, @RequestParam(required = false) String month) {
-    	return expenseService.getExpensesForCurrentUser();
+    public ResponseEntity<PagedResponse<ExpenseResponseDTO>> getAllExpenses(@RequestParam(value= "page", defaultValue = "0", required = false) int page, @RequestParam(value = "size", defaultValue = "20", required = false) int size) {
+    	PagedResponse<ExpenseResponseDTO> response = expenseService.getExpensesForCurrentUserPaginated(page, size);
+        return ResponseEntity.ok(response);
     }
     
     @PutMapping("/{id}")

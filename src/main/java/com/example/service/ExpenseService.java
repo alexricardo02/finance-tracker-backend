@@ -1,6 +1,7 @@
 package com.example.service;
 
 import java.time.LocalDate;
+
 import java.util.List;
 
 
@@ -10,6 +11,10 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -17,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.example.dataTransferObjects.ExpenseRequestDTO;
 import com.example.dataTransferObjects.ExpenseResponseDTO;
+import com.example.dataTransferObjects.PagedResponse;
 import com.example.models.Expense;
 import com.example.models.User;
 import com.example.repository.ExpenseRepository;
@@ -47,26 +53,45 @@ public class ExpenseService {
     }
     
     private Integer getUserIdByUsername(String username) {
+
 	    return userRepository.findByUsername(username)
 	            .orElseThrow(() -> new RuntimeException("User not found"))
 	            .getUserId();
 	}
-	
-	
-    public List<ExpenseResponseDTO> getExpensesForCurrentUser() {
-        // 1. Le preguntamos a Spring Security: "¿Quién está logueado?"
+    
+    public PagedResponse<ExpenseResponseDTO> getExpensesForCurrentUserPaginated(int page, int size) {
+        
+        // 1. ¿Quién está logueado?
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        // 2. Buscamos a ese usuario en la DB
+        // 2. Buscamos a ese usuario
         User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // 3. Usamos la nueva función del repositorio
-        List<Expense> expenses = expenseRepository.findByUserUserId(user.getUserId());
+        // 3. Preparamos la paginación (Página 'page', tamaño 'size', ordenado por fecha descendente)
+        // NOTA: Cambia "date" si tu columna de fecha en la clase Expense se llama diferente (ej. "createdAt", "fecha")
+        Pageable pageable = PageRequest.of(page, size, Sort.by("expenseDate").descending());
 
-        // 4. Mapeamos a DTO (esto ya lo sabías hacer)
-        return expenses.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
+        // 4. Buscamos en el repositorio usando el método paginado
+        // NOTA: Asegúrate de que el método en tu repositorio se llame findByUserUserId(Long id, Pageable p)
+        Page<Expense> expensesPage = expenseRepository.findByUserUserId(user.getUserId(), pageable);
+
+        // 5. Convertimos la lista interna de Expenses a ExpenseResponseDTO
+        List<ExpenseResponseDTO> dtoContent = expensesPage.getContent().stream()
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
+
+        // 6. Empaquetamos todo en nuestra caja mágica de paginación
+        return new PagedResponse<>(
+                dtoContent,
+                expensesPage.getNumber(),
+                expensesPage.getSize(),
+                expensesPage.getTotalElements(),
+                expensesPage.getTotalPages(),
+                expensesPage.isLast()
+        );
     }
+	
     
     // Método para crear un Expense con validación de tipo y subtipo
     @Transactional
