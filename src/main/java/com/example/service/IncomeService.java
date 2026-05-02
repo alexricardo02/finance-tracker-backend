@@ -8,11 +8,18 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import com.example.dataTransferObjects.ExpenseResponseDTO;
 import com.example.dataTransferObjects.IncomeRequestDTO;
 import com.example.dataTransferObjects.IncomeResponseDTO;
+import com.example.dataTransferObjects.PagedResponse;
+import com.example.models.Expense;
 import com.example.models.Income;
 import com.example.models.User;
 import com.example.repository.IncomeRepository;
@@ -92,16 +99,38 @@ public class IncomeService {
 	            .toList();
 	};
 	
-	public List<IncomeResponseDTO> getIncomesForCurrentUser() {
-		String username = SecurityContextHolder.getContext().getAuthentication().getName();
-		
-		User user = userRepository.findByUsername(username)
-	            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-	
-		List<Income> incomes = incomeRepository.findByUserUserId(user.getUserId());
-		
-		return incomes.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
-	}
+public PagedResponse<IncomeResponseDTO> getIncomesForCurrentUserPaginated(int page, int size) {
+        
+        // 1. ¿Quién está logueado?
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        // 2. Buscamos a ese usuario
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // 3. Preparamos la paginación (Página 'page', tamaño 'size', ordenado por fecha descendente)
+        // NOTA: Cambia "date" si tu columna de fecha en la clase Expense se llama diferente (ej. "createdAt", "fecha")
+        Pageable pageable = PageRequest.of(page, size, Sort.by("incomeDage").descending());
+
+        // 4. Buscamos en el repositorio usando el método paginado
+        // NOTA: Asegúrate de que el método en tu repositorio se llame findByUserUserId(Long id, Pageable p)
+        Page<Income> incomesPage = incomeRepository.findByUserUserId(user.getUserId(), pageable);
+
+        // 5. Convertimos la lista interna de Expenses a ExpenseResponseDTO
+        List<IncomeResponseDTO> dtoContent = incomesPage.getContent().stream()
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
+
+        // 6. Empaquetamos todo en nuestra caja mágica de paginación
+        return new PagedResponse<>(
+                dtoContent,
+                incomesPage.getNumber(),
+                incomesPage.getSize(),
+                incomesPage.getTotalElements(),
+                incomesPage.getTotalPages(),
+                incomesPage.isLast()
+        );
+    }
 	
 	public IncomeResponseDTO  getIncomeById(Integer id) {
 		

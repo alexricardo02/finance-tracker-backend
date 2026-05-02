@@ -2,8 +2,11 @@ package com.example.repository;
 
 import java.time.LocalDate;
 
-import java.util.List; 
 
+import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,7 +17,7 @@ import com.example.models.Income;
 @Repository
 public interface IncomeRepository extends JpaRepository<Income, Integer>{
 	
-		List<Income> findByUserUserId(int userId);
+		Page<Income> findByUserUserId(int userId, Pageable pageable);
 	
 		// Obtener todas las incomes de un tipo
 		@Query(
