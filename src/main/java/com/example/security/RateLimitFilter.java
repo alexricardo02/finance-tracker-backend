@@ -27,27 +27,41 @@ public class RateLimitFilter extends OncePerRequestFilter{
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-
-        // Temporary: filter for login
-        if (request.getRequestURI().equals("/api/users/login") && request.getMethod().equals("POST")) {
+    	
+    	String uri = request.getRequestURI();
+    	
+    	if (request.getMethod().equals("POST")) {
+    		
+    		Supplier<BucketConfiguration> configSupplier = null;
+            String prefix = "";
             
-            // 1. Identify user
-            String ip = getClientIP(request);
-
-            byte[] key = ("rate_limit:" + ip).getBytes();
-            
-            Supplier<BucketConfiguration> configSupplier = getConfigSupplierForLogin();
-            
-            Bucket bucket = proxyManager.builder().build(key, configSupplier);
-
-            if (!bucket.tryConsume(1)) {
-                response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-                response.setContentType("application/json");
-                response.getWriter().write("{\"error\": \"Too many login attempts. Please try again later.\"}");
-                return;
+            if (uri.equals("/api/users/login")) {
+                configSupplier = getConfigSupplierForLogin();
+                prefix = "login_limit:";
+            } else if (uri.equals("/api/users/register")) {
+                configSupplier = getConfigSupplierForRegister();
+                prefix = "register_limit:";
             }
-        }
+            if (configSupplier != null) {
+                String ip = getClientIP(request);
+                byte[] key = (prefix + ip).getBytes();
 
+                Bucket bucket = proxyManager.builder().build(key, configSupplier);
+
+                if (!bucket.tryConsume(1)) {
+                    response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+                    response.setContentType("application/json");
+                    
+                    String errorMsg = uri.contains("login") 
+                        ? "Too many login attempts. Please try again in a minute." 
+                        : "Too many accounts created from this IP. Please try again in an hour.";
+                        
+                    response.getWriter().write(String.format("{\"error\": \"%s\"}", errorMsg));
+                    return; 
+                }
+            }
+    	}
+  
         filterChain.doFilter(request, response);
     }
     
@@ -60,6 +74,16 @@ public class RateLimitFilter extends OncePerRequestFilter{
             return BucketConfiguration.builder()
                     .addLimit(limit)
                     .build();
+        };
+    }
+    
+    private Supplier<BucketConfiguration> getConfigSupplierForRegister() {
+        return () -> {
+            Bandwidth limit = Bandwidth.builder()
+                    .capacity(3) // 3
+                    .refillGreedy(3, Duration.ofHours(1)) 
+                    .build();
+            return BucketConfiguration.builder().addLimit(limit).build();
         };
     }
     
