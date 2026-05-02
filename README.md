@@ -1,151 +1,256 @@
-# 📊 Personal Finance Tracker API (Spring Boot)
+# 📊 Finance Tracker — Backend API
 
-A robust, high-performance RESTful API built with Spring Boot for tracking personal expenses and incomes. This backend system is designed with a strong focus on **scalability, security, and performance optimization**, featuring JWT-based authentication, an isolated multi-tenant architecture (user data privacy), and high-speed data retrieval using Redis caching.
+![Java](https://img.shields.io/badge/Java_17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot_3-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![CI](https://img.shields.io/github/actions/workflow/status/alexricardo02/finance-tracker-backend/maven.yml?style=for-the-badge&label=CI&logo=githubactions&logoColor=white)
 
-🌍 **Live Frontend (Next.js):** [https://expenses-incomes-frontend.vercel.app/]
+A production-grade RESTful API for personal finance tracking, built with a focus on **scalability, security, and performance**. Goes beyond a simple CRUD — implements real-world backend engineering concepts including JWT authentication, Redis caching with per-user isolation, rate limiting, pagination, and a global exception handling strategy.
 
----
-
-## 🚀 Key Features
-
-* **Secure Authentication:** JWT (JSON Web Token) implementation for stateless, secure user sessions and route protection.
-* **Complete Financial CRUD:** Create, Read, Update, and Delete operations for both Incomes and Expenses.
-* **Advanced Reporting & Analytics:** Native SQL queries optimized to fetch total aggregations by specific days, months, years, date ranges, and transaction types.
-* **High-Performance Caching:** Redis integration to cache heavy database aggregations, reducing database load and dropping response times to milliseconds.
-* **Strict Data Isolation:** Every query and cache key is scoped by `user_id` to ensure absolute data privacy between users.
-* **Optimized Database Schema:** B-Tree indexing on highly queried columns (Dates, Types, and User IDs) to maintain fast lookup speeds as the database grows.
+🌍 **Live Frontend:** [expenses-incomes-frontend.vercel.app](https://expenses-incomes-frontend.vercel.app)
 
 ---
 
-## 🛠️ Tech Stack & Architecture
+## 📌 Table of Contents
 
-* **Framework:** Java 17, Spring Boot, Spring Web
-* **Persistence:** Spring Data JPA, Hibernate
-* **Database:** Serverless PostgreSQL, hosted on Neon.tech
-* **Caching Layer:** Serverless Redis, hosted on Upstash
-* **DevOps / Cloud:** Dockerized deployment on Render, CI/CD pipelines via GitHub Actions.
-
-### 🏗️ System Design Highlights
-
-1. **Caching Strategy (Read-Heavy Optimization):**
-   Heavy aggregations (e.g., "Total Income for the last 6 months") are cached in Redis. Cache keys are uniquely identified by `#username + '_' + #parameter` to prevent cross-user data leakage.
-2. **Cache Eviction (Data Consistency):**
-   A strict `@CacheEvict` policy is applied to all mutating methods (`POST`, `PUT`, `DELETE`). Any change in a user's financial records immediately invalidates the stale cache, ensuring the dashboard always displays real-time data.
-3. **Native SQL & COALESCE:**
-   Instead of loading thousands of Java objects into memory to calculate totals, the application leverages Native SQL queries with `COALESCE(SUM(amount), 0)` to perform calculations directly at the database layer.
+- [Features](#-features)
+- [System Design](#-system-design)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [API Reference](#-api-reference)
+- [Setup & Installation](#-setup--installation)
+- [Environment Variables](#-environment-variables)
+- [Roadmap](#-roadmap)
 
 ---
 
-## 🗄️ Database Schema Overview
+## ✅ Features
 
-The system operates on three main entities:
-
-* **Users:** Stores authentication credentials, hashed passwords, and creation dates.
-* **Incomes:** Records money coming in. Belongs to a User. Contains amount, currency, date, type, and description.
-* **Expenses:** Records money going out. Belongs to a User. Contains amount, currency, date, type, and description.
-
-*(A One-to-Many relationship exists between User -> Incomes and User -> Expenses, utilizing Lazy Fetching for memory efficiency).*
+- **JWT Authentication** — Stateless session management with signed tokens
+- **Per-user data isolation** — Every query and cache key is scoped by `user_id`
+- **Redis Caching** — Heavy aggregations cached with strict eviction on mutations
+- **Rate Limiting** — Token Bucket algorithm (Bucket4j) on sensitive endpoints
+- **Pagination** — Spring Data `Pageable` on all list endpoints
+- **Global Exception Handling** — Consistent error responses via `@ControllerAdvice`
+- **Native SQL Aggregations** — `COALESCE(SUM(...))` computed at DB layer, not in memory
+- **B-Tree Indexing** — On `user_id`, `date`, and `type` columns for fast lookups
+- **CI/CD** — GitHub Actions pipeline with PostgreSQL and Redis service containers
+- **Dockerized** — Full Docker + Docker Compose setup for local development
 
 ---
 
-## 📡 API Endpoints Reference
+## 🏗 System Design
 
-### 🔐 Authentication (`/api/users`)
-| Method | Endpoint | Description | Auth Required |
-| :--- | :--- | :--- | :--- |
+### Caching Strategy
+All heavy read operations (monthly totals, date-range aggregations, type breakdowns) are cached in Redis. Cache keys follow the pattern `username_parameter` to guarantee strict data isolation between users.
+
+```
+GET /api/incomes/total-month?month=JANUARY
+  → Cache MISS  → Query DB → Store in Redis → Return result
+  → Cache HIT   → Return from Redis (no DB query)
+
+POST /api/incomes (create new income)
+  → @CacheEvict invalidates ALL related cache entries for that user
+  → Next read will repopulate from DB
+```
+
+### Rate Limiting
+The Token Bucket algorithm (via Bucket4j) protects the `/login` endpoint and all `POST` mutation endpoints against brute force and abuse. Each IP gets a fixed number of tokens that refill over time.
+
+### Exception Handling
+All exceptions are caught by a single `@ControllerAdvice` class and converted into a standardized JSON response — no stacktraces ever reach the client.
+
+```json
+{
+  "status": 404,
+  "message": "Income not found with ID: 7",
+  "timestamp": "2026-05-03T14:30:00"
+}
+```
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Java 17, Spring Boot 3 |
+| Persistence | Spring Data JPA, Hibernate |
+| Database | PostgreSQL (Neon.tech serverless) |
+| Cache | Redis (Upstash serverless) |
+| Auth | JWT (jjwt), Spring Security |
+| Rate Limiting | Bucket4j |
+| Validation | Jakarta Bean Validation |
+| DevOps | Docker, Docker Compose |
+| CI/CD | GitHub Actions |
+| Deployment | Render |
+
+---
+
+## 📁 Project Structure
+
+```
+src/main/java/com/example/
+├── config/
+│   ├── SecurityConfig.java        # Spring Security filter chain
+│   └── WebConfig.java             # CORS configuration
+├── controllers/
+│   ├── IncomeController.java
+│   ├── ExpenseController.java
+│   └── UserController.java
+├── service/
+│   ├── IncomeService.java         # Business logic + caching
+│   ├── ExpenseService.java
+│   └── UserService.java
+├── repository/
+│   ├── IncomeRepository.java      # Native SQL aggregation queries
+│   ├── ExpenseRepository.java
+│   └── UserRepository.java
+├── models/
+│   ├── Income.java                # JPA entity with B-Tree indexes
+│   ├── Expense.java
+│   └── User.java
+├── dataTransferObjects/
+│   ├── IncomeRequestDTO.java
+│   ├── IncomeResponseDTO.java
+│   └── ...
+├── exceptions/
+│   ├── GlobalExceptionHandler.java  # @ControllerAdvice
+│   └── ErrorResponse.java           # Standardized error DTO
+└── security/
+    ├── JwtUtil.java               # Token generation & validation
+    └── JwtRequestFilter.java      # Per-request JWT filter
+```
+
+---
+
+## 📡 API Reference
+
+### Authentication — `/api/users`
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
 | `POST` | `/api/users/register` | Register a new user | No |
-| `POST` | `/api/users/login` | Authenticate and receive JWT | No |
+| `POST` | `/api/users/login` | Login and receive JWT | No |
 
-### 💸 Incomes (`/api/incomes`)
-| Method | Endpoint | Description | Auth Required |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/incomes` | Create a new income record | Yes (JWT) |
-| `GET` | `/api/incomes` | Get all incomes for current user | Yes (JWT) |
-| `GET` | `/api/incomes/{id}` | Get specific income by ID | Yes (JWT) |
-| `PUT` | `/api/incomes/{id}` | Update an existing income | Yes (JWT) |
-| `DELETE`| `/api/incomes/{id} | Delete an income | Yes (JWT) |
-| `GET` | `/api/incomes/by-type` | Get incomes filtered by type | Yes (JWT) |
-| `GET` | `/api/incomes/total-month` | Get aggregated total by month | Yes (JWT) |
+### Incomes — `/api/incomes`
 
-### 🛒 Expenses (`/api/expenses`)
-| Method | Endpoint | Description | Auth Required |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/expenses` | Create a new expense record | Yes (JWT) |
-| `GET` | `/api/expenses` | Get all expenses for current user | Yes (JWT) |
-| `GET` | `/api/expenses/{id}` | Get specific expense by ID | Yes (JWT) |
-| `PUT` | `/api/expenses/{id}` | Update an existing expense | Yes (JWT) |
-| `DELETE`| `/api/expenses/{id}` | Delete an expense | Yes (JWT) |
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| `POST` | `/api/incomes` | Create income | JWT |
+| `GET` | `/api/incomes` | Get all incomes (paginated) | JWT |
+| `GET` | `/api/incomes/{id}` | Get income by ID | JWT |
+| `PUT` | `/api/incomes/{id}` | Update income | JWT |
+| `DELETE` | `/api/incomes/{id}` | Delete income | JWT |
+| `GET` | `/api/incomes/by-type` | Filter by type | JWT |
+| `GET` | `/api/incomes/total-month` | Aggregated total by month | JWT |
 
-*(Note: The API also includes multiple endpoints for fetching totals by Year, Last 7 Days, Last 3 Months, etc.)*
+### Expenses — `/api/expenses`
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| `POST` | `/api/expenses` | Create expense | JWT |
+| `GET` | `/api/expenses` | Get all expenses (paginated) | JWT |
+| `GET` | `/api/expenses/{id}` | Get expense by ID | JWT |
+| `PUT` | `/api/expenses/{id}` | Update expense | JWT |
+| `DELETE` | `/api/expenses/{id}` | Delete expense | JWT |
+
+All protected endpoints require the following HTTP header:
+```
+Authorization: Bearer <your_jwt_token>
+```
 
 ---
 
 ## ⚙️ Setup & Installation
 
 ### Prerequisites
-* Java 17 or higher
-* Maven 3.6+
-* PostgreSQL installed and running
-* Docker Desktop (for Redis)
+- Java 17+
+- Maven 3.6+
+- Docker Desktop
 
-### 1. Start Infrastructure (Database & Cache)
-This project uses Docker Compose to manage its dependencies. To spin up PostgreSQL and Redis, simply run:
+### 1. Clone the repository
+```bash
+git clone https://github.com/alexricardo02/finance-tracker-backend.git
+cd finance-tracker-backend
+```
+
+### 2. Start infrastructure
 ```bash
 docker-compose up -d
 ```
+This spins up PostgreSQL on port `5433` and Redis on port `6379`.
 
-### 2. Configure Database and Application Properties
-Create an application.properties (or .yml) file in src/main/resources and configure your environment variables:
-```bash
-# Server configuration
+### 3. Configure environment variables
+Create `src/main/resources/application.properties`:
+```properties
+# Server
 server.port=8080
 
-# PostgreSQL Configuration
-spring.datasource.url=jdbc:postgresql://localhost:5432/finance_db
-spring.datasource.username=your_db_username
-spring.datasource.password=your_db_password
+# PostgreSQL
+spring.datasource.url=jdbc:postgresql://localhost:5433/finance_db
+spring.datasource.username=postgres
+spring.datasource.password=your_password
 spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
 
-# Redis Configuration
+# Redis
 spring.data.redis.host=localhost
 spring.data.redis.port=6379
 spring.cache.type=redis
 
-# JWT Secret Key (Replace with a strong secret in production)
-jwt.secret=your_super_secret_key_here
+# JWT
+jwt.secret=your_secret_key_here
 ```
 
-### 3. Build and Run
-Clone the repository and build the project using Maven:
+### 4. Run
 ```bash
-git clone [https://github.com/yourusername/finance-tracker-backend.git](https://github.com/yourusername/finance-tracker-backend.git)
-cd finance-tracker-backend
-mvn clean install
 mvn spring-boot:run
 ```
 
----
-
-## ⚙️ Core Optimizations
-
-3. **Native SQL & COALESCE**
-Instead of loading thousands of Java objects into memory to calculate totals, the application leverages Native SQL queries with COALESCE(SUM(amount), 0) to perform calculations directly at the database layer.
+The API will be available at `http://localhost:8080`.
 
 ---
 
-## 🔒 Security Workflow
-* **1.** The client sends a POST request to /api/users/login with credentials.
-* **2.** The server verifies the credentials and returns a signed JWT.
-* **3.** For subsequent requests, the client must include this token in the HTTP Header:
-```HTTP
-Authorization: Bearer <your_jwt_token>
-```
-* **4.** The JwtRequestFilter intercepts incoming requests, validates the token signature/expiration, and extracts the username to establish the SecurityContext.
+## 🔐 Environment Variables
+
+| Variable | Description |
+|---|---|
+| `DB_URL` | PostgreSQL JDBC connection URL |
+| `DB_USERNAME` | Database username |
+| `DB_PASSWORD` | Database password |
+| `JWT_SECRET` | Secret key for signing JWT tokens |
+| `REDIS_HOST` | Redis hostname |
+| `REDIS_PORT` | Redis port |
+| `REDIS_PASSWORD` | Redis password (empty for local) |
 
 ---
 
-## 🗺️ Roadmap / Future Improvements
-* **[ ]** Rate Limiting (Bucket4j): Implement Token Bucket algorithm to protect the /login and POST endpoints against Brute Force and DDoS attacks.
-* **[ ]** Pagination & Sorting: Implement Spring Data Pageable for /api/expenses and /api/incomes to handle massive datasets gracefully.
-* **[ ]** Global Exception Handler: Implement @ControllerAdvice to standardize error response payloads (e.g., 404 Not Found, 400 Bad Request) across the entire application.
+## 🗺 Roadmap
+
+- [x] JWT Authentication
+- [x] Redis Caching with per-user isolation
+- [x] Rate Limiting (Bucket4j)
+- [x] Pagination (Spring Data Pageable)
+- [x] Global Exception Handler
+- [x] CI/CD (GitHub Actions)
+- [x] Docker + Docker Compose
+- [ ] Refresh Tokens
+- [ ] Role-Based Access Control (RBAC)
+- [ ] Idempotency Keys
+- [ ] Swagger / OpenAPI documentation
+- [ ] Structured Logging (SLF4J)
+- [ ] Spring Boot Actuator + Metrics
+
+---
+
+## 👤 Author
+
+**Alex Brinckmann**
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
