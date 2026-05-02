@@ -3,6 +3,7 @@ package com.example.controllers;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,8 +17,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.dataTransferObjects.ExpenseResponseDTO;
 import com.example.dataTransferObjects.IncomeRequestDTO;
 import com.example.dataTransferObjects.IncomeResponseDTO;
+import com.example.dataTransferObjects.PagedResponse;
+
 import jakarta.validation.Valid;
 import com.example.service.IncomeService;
 
@@ -40,9 +44,10 @@ public class IncomeController {
 	}
 	
 	@GetMapping
-	public List<IncomeResponseDTO> getAllIncomes(@RequestParam(required = false) Integer userId, @RequestParam(required = false) String month) {
-		return incomeService.getIncomesForCurrentUser();
-	}
+    public ResponseEntity<PagedResponse<IncomeResponseDTO>> getAllIncomes(@RequestParam(value= "page", defaultValue = "0", required = false) int page, @RequestParam(value = "size", defaultValue = "20", required = false) int size) {
+    	PagedResponse<IncomeResponseDTO> response = incomeService.getIncomesForCurrentUserPaginated(page, size);
+        return ResponseEntity.ok(response);
+    }
 	
 	@GetMapping("/{id}")
     public IncomeResponseDTO getIncomeById(@PathVariable int id) {

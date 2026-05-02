@@ -70,7 +70,7 @@ public class ExpenseService {
 
         // 3. Preparamos la paginación (Página 'page', tamaño 'size', ordenado por fecha descendente)
         // NOTA: Cambia "date" si tu columna de fecha en la clase Expense se llama diferente (ej. "createdAt", "fecha")
-        Pageable pageable = PageRequest.of(page, size, Sort.by("expenseDate").descending());
+        Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
 
         // 4. Buscamos en el repositorio usando el método paginado
         // NOTA: Asegúrate de que el método en tu repositorio se llame findByUserUserId(Long id, Pageable p)
