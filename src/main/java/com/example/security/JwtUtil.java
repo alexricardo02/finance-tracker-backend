@@ -14,7 +14,7 @@ public class JwtUtil {
 	
 	// Llave secreta (en producción debe venir de una variable de entorno)
     private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-    private final long expirationTime = 3600000; // 1 hora en milisegundos
+    private final long expirationTime = 900000; // 15 minutos
     
     // GENERAR TOKEN
     public String generateToken(String username) {
