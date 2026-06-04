@@ -58,15 +58,14 @@ public class IncomeService {
 	}
 	
 	@Transactional
-	@CacheEvict(value = {"incomes_month", "incomes_type", "incomes_year", "incomes_day", "all_incomes", "incomes_last_7_days", "incomes_last_month", "incomes_last_3_month", "incomes_last_6_months", "incomes_last_year"}, allEntries = true)	
-	public IncomeResponseDTO saveIncome(IncomeRequestDTO requestDTO) {
+	@CacheEvict(value = {"incomes_month", "incomes_type", "incomes_year", "incomes_day", "all_incomes", "incomes_last_7_days", "incomes_last_month", "incomes_last_3_month", "incomes_last_6_months", "incomes_last_year", "user_incomes"}, allEntries = true)	
+	public IncomeResponseDTO saveIncome(IncomeRequestDTO requestDTO, String username) {
 		
 		if (requestDTO.getAmount() == null) {
 	        throw new IllegalArgumentException("Amount is required");
 	    }
 	
-		String authName = SecurityContextHolder.getContext().getAuthentication().getName();
-	    System.out.println("LOG: Spring Security dice que el usuario es: " + authName);
+	    System.out.println("LOG: Spring Security dice que el usuario es: " + username);
 		
 		// 1. Convertir DTO a entidad
         Income income = new Income();
@@ -77,7 +76,7 @@ public class IncomeService {
         income.setDescription(requestDTO.getDescription());
       
         
-        User user = userRepository.findByUsername(authName)
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
             income.setUser(user);
             
@@ -91,26 +90,19 @@ public class IncomeService {
         return convertToResponseDTO(savedIncome);
     }
 
-	@Cacheable(value = "all_incomes", key = "'all'")
-	public List<IncomeResponseDTO> getAllIncomes() {
-		List<Income> incomes = incomeRepository.findAll();
-		return incomes.stream()
-	            .map(income -> convertToResponseDTO(income))
-	            .toList();
-	};
-	
-public PagedResponse<IncomeResponseDTO> getIncomesForCurrentUserPaginated(int page, int size) {
-        
-        // 1. ¿Quién está logueado?
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
+	
+	@Cacheable(value = "user_incomes", key = "#username + '-' + #page + '-' + #size")
+	public PagedResponse<IncomeResponseDTO> getIncomesForCurrentUserPaginated(String username, int page, int size) {
+        
+    
         // 2. Buscamos a ese usuario
         User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         // 3. Preparamos la paginación (Página 'page', tamaño 'size', ordenado por fecha descendente)
         // NOTA: Cambia "date" si tu columna de fecha en la clase Expense se llama diferente (ej. "createdAt", "fecha")
-        Pageable pageable = PageRequest.of(page, size, Sort.by("incomeDage").descending());
+        Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
 
         // 4. Buscamos en el repositorio usando el método paginado
         // NOTA: Asegúrate de que el método en tu repositorio se llame findByUserUserId(Long id, Pageable p)
@@ -132,16 +124,29 @@ public PagedResponse<IncomeResponseDTO> getIncomesForCurrentUserPaginated(int pa
         );
     }
 	
-	public IncomeResponseDTO  getIncomeById(Integer id) {
+	public IncomeResponseDTO  getIncomeById(Integer id, String username) {
 		
 		Income income = incomeRepository.findById(id)
 		        .orElseThrow(() -> new EntityNotFoundException("Income not found with ID: " + id));
+		
+		if (!income.getUser().getUsername().equals(username)) {
+	        throw new SecurityException("No tienes permiso para ver este ingreso");
+	    }
+		
 		return convertToResponseDTO(income);
 	}
 	
 	@Transactional
-	@CacheEvict(value = {"incomes_month", "incomes_type", "incomes_year", "incomes_day", "all_incomes", "incomes_last_7_days", "incomes_last_month", "incomes_last_3_month", "incomes_last_6_months", "incomes_last_year"}, allEntries = true)	
-	public void deleteIncome(Integer id) {
+	@CacheEvict(value = {"incomes_month", "incomes_type", "incomes_year", "incomes_day", "all_incomes", "incomes_last_7_days", "incomes_last_month", "incomes_last_3_month", "incomes_last_6_months", "incomes_last_year", "user_incomes"}, allEntries = true)	
+	public void deleteIncome(Integer id, String username) {
+		
+		Income income = incomeRepository.findById(id)
+	            .orElseThrow(() -> new RuntimeException("Ingreso no encontrado con ID: " + id));
+		
+		if (!income.getUser().getUsername().equals(username)) {
+	        throw new SecurityException("No tienes permiso para eliminar este ingreso");
+	    }
+		
 		if (!incomeRepository.existsById(id)) {
             throw new RuntimeException("Ingreso no encontrado con ID: " + id);
         }
@@ -149,12 +154,16 @@ public PagedResponse<IncomeResponseDTO> getIncomesForCurrentUserPaginated(int pa
 	}
 	
 	@Transactional
-	@CacheEvict(value = {"incomes_month", "incomes_type", "incomes_year", "incomes_day", "all_incomes", "incomes_last_7_days", "incomes_last_month", "incomes_last_3_month", "incomes_last_6_months", "incomes_last_year"}, allEntries = true)	
-	public IncomeResponseDTO  updateIncome(Integer incomeId, IncomeRequestDTO incomeRequestDTO) {
+	@CacheEvict(value = {"incomes_month", "incomes_type", "incomes_year", "incomes_day", "all_incomes", "incomes_last_7_days", "incomes_last_month", "incomes_last_3_month", "incomes_last_6_months", "incomes_last_year", "user_incomes"}, allEntries = true)	
+	public IncomeResponseDTO  updateIncome(Integer incomeId, IncomeRequestDTO incomeRequestDTO, String username) {
 		
 		// 1. Buscar el ingreso existente
 		Income existingIncome = incomeRepository.findById(incomeId)
 				.orElseThrow(() -> new RuntimeException("Ingreso no encontrado con ID: " + incomeId));
+		
+		if (!existingIncome.getUser().getUsername().equals(username)) {
+		    throw new SecurityException("No tienes permiso para editar este ingreso");
+		}
 		
 		// 2. Actualizar campos básicos
 		existingIncome.setAmount(incomeRequestDTO.getAmount());
