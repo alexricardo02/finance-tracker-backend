@@ -2,6 +2,7 @@ package com.example.service;
 
 import java.time.LocalDate;
 
+
 import java.util.List;
 
 
@@ -27,6 +28,7 @@ import com.example.models.Expense;
 import com.example.models.User;
 import com.example.repository.ExpenseRepository;
 import com.example.repository.UserRepository;
+import org.springframework.cache.annotation.Cacheable;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -38,7 +40,7 @@ public class ExpenseService {
     private ExpenseRepository expenseRepository;
 	
 	@Autowired UserRepository userRepository;
-    
+	    
     // Helper method to convert Expense → ExpenseResponseDTO
     private ExpenseResponseDTO convertToResponseDTO(Expense expense) {
         return new ExpenseResponseDTO(
@@ -59,10 +61,9 @@ public class ExpenseService {
 	            .getUserId();
 	}
     
-    public PagedResponse<ExpenseResponseDTO> getExpensesForCurrentUserPaginated(int page, int size) {
+    @Cacheable(value = "user_expenses", key = "#username + '-' + #page + '-' + #size")
+    public PagedResponse<ExpenseResponseDTO> getExpensesForCurrentUserPaginated(String username, int page, int size) {
         
-        // 1. ¿Quién está logueado?
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
         // 2. Buscamos a ese usuario
         User user = userRepository.findByUsername(username)
@@ -95,8 +96,8 @@ public class ExpenseService {
     
     // Método para crear un Expense con validación de tipo y subtipo
     @Transactional
-	@CacheEvict(value = {"all_expenses_types", "expenses_type", "expenses_last_7_days", "expenses_last_months", "expenses_last_3_months", "expenses_last_6_months", "expenses_last_year", "expenses_day", "expenses_month", "expenses_year"}, allEntries = true)	
-    public ExpenseResponseDTO saveExpense(ExpenseRequestDTO requestDTO) {
+	@CacheEvict(value = {"all_expenses_types", "expenses_type", "expenses_last_7_days", "expenses_last_months", "expenses_last_3_months", "expenses_last_6_months", "expenses_last_year", "expenses_day", "expenses_month", "expenses_year", "user_expenses"}, allEntries = true)	
+    public ExpenseResponseDTO saveExpense(ExpenseRequestDTO requestDTO, String username) {
     	
     	if (requestDTO == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
@@ -111,9 +112,7 @@ public class ExpenseService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "ExpenseSubtype not found for typeName=" + requestDTO.getTypeName());
         }
-    	
-    	String authName = SecurityContextHolder.getContext().getAuthentication().getName();
-    	
+    	    	
     	
     	// Build expense entity
         Expense expense = new Expense();
@@ -125,7 +124,7 @@ public class ExpenseService {
         
         
      // Resolve user
-        User user = userRepository.findByUsername(authName)
+        User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new EntityNotFoundException("User not found"));
         
         expense.setUser(user);
@@ -136,35 +135,52 @@ public class ExpenseService {
         return convertToResponseDTO(savedExpense);
     }
     
-   
-    public List<ExpenseResponseDTO> getAllExpenses() { 
-    	List<Expense> expenses = expenseRepository.findAll();
-    	return expenses.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
-    }
-    
     
     @Cacheable(value = "all_expenses_types", key = "'all'")
     public List<String> getAllExpenseTypes() {
     	return expenseRepository.findAllExpenseTypes();
     }
 
-    public ExpenseResponseDTO getExpenseById(int id) { 
+    public ExpenseResponseDTO getExpenseById(int id, String username) { 
     	Expense expense = expenseRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Expense not found with ID: " + id));
+    	
+    	if (!expense.getUser().getUsername().equals(username)) {
+	        throw new SecurityException("No tienes permiso para ver este gasto");
+	    }
+    	
     	return convertToResponseDTO(expense);
     }
 
     @Transactional
-	@CacheEvict(value = {"all_expenses_types", "expenses_type", "expenses_last_7_days", "expenses_last_months", "expenses_last_3_months", "expenses_last_6_months", "expenses_last_year", "expenses_day", "expenses_month", "expenses_year"}, allEntries = true)	
-    public void deleteExpense(int id) {
+	@CacheEvict(value = {"all_expenses_types", "expenses_type", "expenses_last_7_days", "expenses_last_months", "expenses_last_3_months", "expenses_last_6_months", "expenses_last_year", "expenses_day", "expenses_month", "expenses_year", "user_expenses"}, allEntries = true)	
+    public void deleteExpense(int id, String username) {
+    	
+    	Expense expense = expenseRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Gasto no encontrado con ID: " + id));
+        
+        // 2. Verificamos que el ingreso le pertenezca al usuario logueado
+        if (!expense.getUser().getUsername().equals(username)) {
+            throw new SecurityException("No tienes permiso para eliminar este gasto");
+        }
+        
+        if (!expenseRepository.existsById(id)) {
+            throw new RuntimeException("Gasto no encontrado con ID: " + id);
+        }
+       
         expenseRepository.deleteById(id);
     }
     
     @Transactional
-	@CacheEvict(value = {"all_expenses_types", "expenses_type", "expenses_last_7_days", "expenses_last_months", "expenses_last_3_months", "expenses_last_6_months", "expenses_last_year", "expenses_day", "expenses_month", "expenses_year"}, allEntries = true)	
-    public ExpenseResponseDTO  updateExpense(int expenseId, ExpenseRequestDTO requestDTO) {
+	@CacheEvict(value = {"all_expenses_types", "expenses_type", "expenses_last_7_days", "expenses_last_months", "expenses_last_3_months", "expenses_last_6_months", "expenses_last_year", "expenses_day", "expenses_month", "expenses_year", "user_expenses"}, allEntries = true)	
+    public ExpenseResponseDTO  updateExpense(int expenseId, ExpenseRequestDTO requestDTO, String username) {
     	
     	Expense existingExpense = expenseRepository.findById(expenseId).orElseThrow(() -> new IllegalArgumentException("Expense not found"));
-    			
+    	
+    	if (!existingExpense.getUser().getUsername().equals(username)) {
+		    throw new SecurityException("No tienes permiso para editar este gasto");
+		}
+		
+    	
     	existingExpense.setExpenseAmount(requestDTO.getAmount());
         existingExpense.setExpenseDate(requestDTO.getDate());
         existingExpense.setExpenseType(requestDTO.getTypeName());

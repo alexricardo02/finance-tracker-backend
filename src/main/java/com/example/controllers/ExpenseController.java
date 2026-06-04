@@ -4,6 +4,7 @@ import java.util.List;
 
 
 
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,6 +23,8 @@ import com.example.dataTransferObjects.*;
 import jakarta.validation.Valid;
 import com.example.service.*;
 
+import java.security.Principal;
+
 @RestController
 @RequestMapping("/api/expenses")
 public class ExpenseController {
@@ -32,34 +35,31 @@ public class ExpenseController {
     	this.expenseService = expenseService;
     }
     
-    //Create an Expense
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ExpenseResponseDTO createExpense(@Valid @RequestBody ExpenseRequestDTO requestDTO) {
-    	return expenseService.saveExpense(requestDTO); // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    public ExpenseResponseDTO createExpense(Principal principal, @Valid @RequestBody ExpenseRequestDTO requestDTO) {
+    	return expenseService.saveExpense(requestDTO, principal.getName()); // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     }
     
- // Get all expenses
     @GetMapping
-    public ResponseEntity<PagedResponse<ExpenseResponseDTO>> getAllExpenses(@RequestParam(value= "page", defaultValue = "0", required = false) int page, @RequestParam(value = "size", defaultValue = "20", required = false) int size) {
-    	PagedResponse<ExpenseResponseDTO> response = expenseService.getExpensesForCurrentUserPaginated(page, size);
+    public ResponseEntity<PagedResponse<ExpenseResponseDTO>> getAllExpenses(Principal principal, @RequestParam(value= "page", defaultValue = "0", required = false) int page, @RequestParam(value = "size", defaultValue = "20", required = false) int size) {
+    	PagedResponse<ExpenseResponseDTO> response = expenseService.getExpensesForCurrentUserPaginated(principal.getName(), page, size);
         return ResponseEntity.ok(response);
     }
     
     @PutMapping("/{id}")
-    public ExpenseResponseDTO updateExpense(@PathVariable int id, @Valid @RequestBody ExpenseRequestDTO requestDTO) {
-    	return expenseService.updateExpense(id, requestDTO);
+    public ExpenseResponseDTO updateExpense(Principal principal, @PathVariable int id, @Valid @RequestBody ExpenseRequestDTO requestDTO) {
+    	return expenseService.updateExpense(id, requestDTO, principal.getName());
     	
     }
     
     @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteExpense(@PathVariable int id) {
-    	expenseService.deleteExpense(id);
+    public void deleteExpense(Principal principal, @PathVariable int id) {
+    	expenseService.deleteExpense(id, principal.getName());
     }
     
     
-    // implementar el resto de funciones
     
 }
