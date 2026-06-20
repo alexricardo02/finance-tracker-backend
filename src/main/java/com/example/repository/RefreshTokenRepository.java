@@ -3,6 +3,7 @@ package com.example.repository;
 import com.example.models.RefreshToken;
 import com.example.models.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -12,7 +13,7 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Inte
 	
     Optional<RefreshToken> findByToken(String token);
     
-    Optional<RefreshToken> findByUserId(int userId);
+    Optional<RefreshToken> findByUserId(@Param("userId") int userId);
     
     void deleteByUser(User user);
 
