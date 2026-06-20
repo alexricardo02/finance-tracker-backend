@@ -25,7 +25,7 @@ public class RefreshTokenService {
     private final Long refreshTokenDurationMs = 604800000L;
     
     @Transactional
-    public RefreshToken createRefreshToken(Long userId) {
+    public RefreshToken createRefreshToken(Integer userId) {
         // 1. Buscamos si el usuario ya tiene un token guardado en la BD
         RefreshToken refreshToken = refreshTokenRepository.findByUserId(userId)
                 .orElse(new RefreshToken()); // Si no tiene, creamos uno nuevo vacío
@@ -37,9 +37,9 @@ public class RefreshTokenService {
         // (Nota: mantén tu variable de tiempo original si se llama distinto, 
         // a veces es refreshTokenDurationMs u otra constante que tengas configurada)
         refreshToken.setExpiryDate(java.time.Instant.now().plusMillis(86400000L)); // Ejemplo: 24 horas
-
+        
         // 3. Guardamos. 
-        // 💡 MAGIA DE SPRING BOOT: Como el objeto ya existe, Hibernate hará un UPDATE 
+        // Como el objeto ya existe, Hibernate hará un UPDATE 
         // en lugar de un INSERT, esquivando el error de "duplicate key".
         return refreshTokenRepository.save(refreshToken);
     }
