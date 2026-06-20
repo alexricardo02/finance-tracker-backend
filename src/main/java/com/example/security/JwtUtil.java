@@ -1,11 +1,15 @@
 package com.example.security;
 
 import io.jsonwebtoken.Claims;
+
+
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
-
+import org.springframework.beans.factory.annotation.Value;
+import jakarta.annotation.PostConstruct;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
@@ -13,8 +17,17 @@ import java.util.Date;
 public class JwtUtil {
 	
 	// Llave secreta (en producción debe venir de una variable de entorno)
-    private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-    private final long expirationTime = 3600000; // 1 hora en milisegundos
+	@Value("${jwt.secret}")
+	private String secret;
+
+	private Key key;
+
+	@PostConstruct
+	public void init() {
+	    byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+	    this.key = Keys.hmacShaKeyFor(keyBytes);
+	}
+    private final long expirationTime = 900000; // 15 minutos
     
     // GENERAR TOKEN
     public String generateToken(String username) {
