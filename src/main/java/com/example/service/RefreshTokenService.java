@@ -25,13 +25,13 @@ public class RefreshTokenService {
     private final Long refreshTokenDurationMs = 604800000L;
     
     @Transactional
-    public RefreshToken createRefreshToken(Integer userId) {
+    public RefreshToken createRefreshToken(int userId) {
         // 1. Buscamos si el usuario ya tiene un token guardado en la BD
         RefreshToken refreshToken = refreshTokenRepository.findByUserId(userId)
                 .orElse(new RefreshToken()); // Si no tiene, creamos uno nuevo vacío
 
         // 2. Le asignamos o actualizamos los valores
-        refreshToken.setUser(userRepository.findById(userId.intValue()).orElseThrow(() -> new RuntimeException("User not found")));
+        refreshToken.setUser(userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found")));
         refreshToken.setToken(java.util.UUID.randomUUID().toString());
         
         // (Nota: mantén tu variable de tiempo original si se llama distinto, 
