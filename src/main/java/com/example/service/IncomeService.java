@@ -92,7 +92,7 @@ public class IncomeService {
 
 
 	
-	@Cacheable(value = "user_incomes", key = "#username + '-' + #page + '-' + #size")
+	// @Cacheable(value = "user_incomes", key = "#username + '-' + #page + '-' + #size")
 	public PagedResponse<IncomeResponseDTO> getIncomesForCurrentUserPaginated(String username, int page, int size) {
         
     
@@ -172,13 +172,6 @@ public class IncomeService {
 		existingIncome.setType(incomeRequestDTO.getType());
 		existingIncome.setCurrency(incomeRequestDTO.getCurrency());
 		
-        
-		
-		if (incomeRequestDTO.getUserId() != null) {
-			User newUser = userRepository.findById(incomeRequestDTO.getUserId())
-					.orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + incomeRequestDTO.getUserId()));
-			existingIncome.setUser(newUser);
-		}
 		
 		// 4. Guardar cambios
         Income updatedIncome = incomeRepository.save(existingIncome);

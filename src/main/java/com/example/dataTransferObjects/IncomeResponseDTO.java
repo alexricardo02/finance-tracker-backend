@@ -2,12 +2,15 @@ package com.example.dataTransferObjects;
 
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 
 public class IncomeResponseDTO {
 	
 	private Integer incomeId;
 	private Double amount;
 	private String currency;
+	@JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date;
     private String type;
     private Integer userId;

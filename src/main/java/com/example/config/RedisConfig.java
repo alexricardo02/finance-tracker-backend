@@ -3,6 +3,7 @@ package com.example.config;
 import java.time.Duration;
 
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +26,12 @@ public class RedisConfig {
 	    ObjectMapper redisMapper = new ObjectMapper();
 	    redisMapper.registerModule(new JavaTimeModule());
 	    redisMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+	    
+	    redisMapper.activateDefaultTyping(
+		        redisMapper.getPolymorphicTypeValidator(),
+		        ObjectMapper.DefaultTyping.NON_FINAL,
+		        JsonTypeInfo.As.PROPERTY
+		    );
 
 	    RedisCacheConfiguration cacheConfig = RedisCacheConfiguration.defaultCacheConfig()
 	            .disableCachingNullValues()
