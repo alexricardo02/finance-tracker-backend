@@ -61,7 +61,7 @@ public class ExpenseService {
 	            .getUserId();
 	}
     
-    @Cacheable(value = "user_expenses", key = "#username + '-' + #page + '-' + #size")
+    // @Cacheable(value = "user_expenses", key = "#username + '-' + #page + '-' + #size")
     public PagedResponse<ExpenseResponseDTO> getExpensesForCurrentUserPaginated(String username, int page, int size) {
         
 

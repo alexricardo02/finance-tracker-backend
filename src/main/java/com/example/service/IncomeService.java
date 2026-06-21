@@ -92,7 +92,7 @@ public class IncomeService {
 
 
 	
-	@Cacheable(value = "user_incomes", key = "#username + '-' + #page + '-' + #size")
+	// @Cacheable(value = "user_incomes", key = "#username + '-' + #page + '-' + #size")
 	public PagedResponse<IncomeResponseDTO> getIncomesForCurrentUserPaginated(String username, int page, int size) {
         
     
