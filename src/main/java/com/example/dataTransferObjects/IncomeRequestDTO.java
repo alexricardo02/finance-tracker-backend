@@ -3,7 +3,6 @@ package com.example.dataTransferObjects;
 import java.time.LocalDate;
 
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
@@ -19,8 +18,8 @@ public class IncomeRequestDTO {
 	@NotNull(message = "La fecha es obligatoria")
     private LocalDate date;
     
-	@NotBlank(message = "El tipo es obligatorio")
-    private String typeName;
+	@NotNull(message = "La categoría es obligatoria")
+    private Integer categoryId; 
 	
 	private String description;
     
@@ -53,13 +52,8 @@ public class IncomeRequestDTO {
 		this.date = date;
 	}
 
-	public String getType() {
-		return typeName;
-	}
-
-	public void setType(String type) {
-		this.typeName = type;
-	}
+	public Integer getCategoryId() { return categoryId; }
+    public void setCategoryId(Integer categoryId) { this.categoryId = categoryId; }
 
 	public Integer getUserId() {
 		return userId;
@@ -79,12 +73,12 @@ public class IncomeRequestDTO {
 
 	public IncomeRequestDTO(@Positive(message = "El income tiene que ser positivo") Double amount,
 			@NotNull(message = "La fecha es obligatoria") LocalDate date,
-			@NotBlank(message = "El tipo es obligatorio") String typeName,
+			@NotNull(message = "El tipo es obligatorio") Integer categoryId,
 			@NotNull(message = "El usuario debe existir") Integer userId, String description) {
 		super();
 		this.amount = amount;
 		this.date = date;
-		this.typeName = typeName;
+		this.categoryId = categoryId;
 		this.userId = userId;
 		this.description = description;
 	}

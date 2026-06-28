@@ -8,7 +8,7 @@ import jakarta.persistence.*;
 @Entity
 @Table(name="incomes", indexes = {
 		@Index(name = "idx_income_user", columnList = "user_id"),
-		@Index(name = "idx_income_type", columnList = "type"),
+		@Index(name = "idx_income_category", columnList = "category_id"),
 		@Index(name = "idx_income_date", columnList = "date")
 })
 public class Income {
@@ -27,8 +27,9 @@ public class Income {
 	@Column(name="date", nullable = false)
     private LocalDate date;
 	
-	@Column(name="type", nullable = false)
-    private String type;
+	@ManyToOne(fetch = FetchType.EAGER)
+	@JoinColumn(name="category_id", nullable = true)
+    private Category category;
 	
 	@Column(name="description")
     private String description;
@@ -38,19 +39,26 @@ public class Income {
 	private User user;
 	
 
-    public Income(Integer incomeId, double amount, String currency, LocalDate date, User user, String type, String description) {
+    public Income(Integer incomeId, double amount, String currency, LocalDate date, User user, Category category, String type, String description) {
         this.incomeId = incomeId;
     	this.amount = amount;
         this.currency = currency;
         this.date = date;
         this.user = user;
-        this.type = type;
+        this.category = category;
         this.description = description;
     }
 
     public Income() {
     }
     
+    public Category getCategory() {
+		return category;
+	}
+
+	public void setCategory(Category category) {
+		this.category = category;
+	}
 
 	public String getCurrency() {
 		return currency;
@@ -82,14 +90,6 @@ public class Income {
 
 	public void setDate(LocalDate date) {
 		this.date = date;
-	}
-
-	public String getType() {
-		return type;
-	}
-
-	public void setType(String type) {
-		this.type = type;
 	}
 
 	public User getUser() {

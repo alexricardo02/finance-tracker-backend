@@ -2,6 +2,7 @@ package com.example.service;
 
 import java.sql.Timestamp;
 
+
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,13 +16,18 @@ import com.example.dataTransferObjects.UserUpdateDTO;
 import com.example.models.Expense;
 import com.example.models.Income;
 import com.example.models.User;
+import com.example.repository.CategoryRepository;
 import com.example.repository.UserRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+import com.example.models.Category;
 
 @Service
 public class UserService {
+	
+	@Autowired
+	private CategoryRepository categoryRepository;
 	
 	@Autowired // 
     private UserRepository userRepository;
@@ -61,6 +67,16 @@ public class UserService {
         user.setCreation_date(new Timestamp(System.currentTimeMillis()));
         
         User savedUser = userRepository.save(user);
+        
+        java.util.List<Category> defaultCategories = java.util.Arrays.asList(
+                new Category("Salary", "income", savedUser),
+                new Category("Food", "expense", savedUser),
+                new Category("Rent", "expense", savedUser),
+                new Category("Transport", "expense", savedUser),
+                new Category("Entertainment", "expense", savedUser)
+            );
+        categoryRepository.saveAll(defaultCategories);
+        
         return convertToProfileDTO(savedUser);
         
     }
