@@ -9,7 +9,7 @@ import jakarta.persistence.*;
 @Table(name="expenses",
 		indexes = {
 				@Index(name = "idx_expense_user", columnList = "user_id"),
-				@Index(name = "idx_expense_type", columnList = "type"),
+				@Index(name = "idx_expense_category", columnList = "category_id"),
 				@Index(name = "idx_expense_date", columnList = "date")
 	}
 )
@@ -29,8 +29,9 @@ public class Expense {
 	@Column(name="date", nullable = false)
     private LocalDate date;
 	
-	@Column(length = 100)
-    private String type;
+	@ManyToOne(fetch = FetchType.EAGER)
+	@JoinColumn(name="category_id", nullable = true)
+    private Category category;
 	
 	@Column(name = "expense_description", columnDefinition = "text")
     private String description;
@@ -43,15 +44,14 @@ public class Expense {
     public Expense() {
     }
 
-    public Expense(int id, double amount, String currency, LocalDate date, String type, String description) {
+    public Expense(int id, double amount, String currency, LocalDate date, Category category, String type, String description) {
         this.id = id;
         this.amount = amount;
         this.currency = currency;
         this.date = date;
-        this.type = type;
+        this.category = category;
         this.description = description;
     }
-    
     
 
 	public String getCurrency() {
@@ -64,6 +64,14 @@ public class Expense {
 
 	public int getExpenseID() {
 		return id;
+	}
+	
+	public Category getCategory() {
+		return category;
+	}
+	
+	public void setCategory(Category category) {
+		this.category = category;
 	}
 
 	public void setExpenseID(int expenseID) {
@@ -86,13 +94,6 @@ public class Expense {
 		this.date = expenseDate;
 	}
 
-	public String getExpenseType() {
-		return type;
-	}
-
-	public void setExpenseType(String expenseType) {
-		this.type = expenseType;
-	}
 
 	public String getExpenseDescription() {
 		return description;

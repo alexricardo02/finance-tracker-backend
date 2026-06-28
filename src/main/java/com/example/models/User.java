@@ -3,6 +3,7 @@ package com.example.models;
 import java.util.Date;
 import java.util.List;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -38,7 +39,14 @@ public class User {
 	@OneToMany(mappedBy="user")
 	private List<Income> incomes;
 	
+	@OneToMany(mappedBy="user", cascade = CascadeType.ALL)
+	private List<Category> categories;
+	
 
+	public List<Category> getCategories() {
+		return categories;
+	}
+	
     public List<Expense> getExpenses() {
 		return expenses;
 	}
@@ -70,6 +78,10 @@ public class User {
     public void setUsername(String username) {
         this.username = username;
     }
+    
+    public void setCategories(List<Category> categories) {
+		this.categories = categories;
+	}
 
     public String getPassword_hash() {
         return passwordHash;
