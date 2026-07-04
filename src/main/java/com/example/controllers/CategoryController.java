@@ -37,7 +37,7 @@ public class CategoryController {
         User user = userRepository.findByUsername(getAuthenticatedUsername())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        List<CategoryDTO> categories = categoryRepository.findByUserUserId(user.getUserId())
+        List<CategoryDTO> categories = categoryRepository.findByUserUserIdOrUserIsNull(user.getUserId())
                 .stream()
                 .map(c -> new CategoryDTO(c.getCategoryId(), c.getName(), c.getType()))
                 .collect(Collectors.toList());
