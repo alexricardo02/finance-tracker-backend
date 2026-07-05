@@ -84,18 +84,6 @@ public class IncomeRequestDTO {
 		this.paymentMethod = paymentMethod;
 	}
 
-	public IncomeRequestDTO(@Positive(message = "El income tiene que ser positivo") Double amount,
-			@NotNull(message = "La fecha es obligatoria") LocalDate date,
-			@NotNull(message = "El tipo es obligatorio") Integer categoryId,
-			@NotNull(message = "El usuario debe existir") Integer userId, String description) {
-		super();
-		this.amount = amount;
-		this.date = date;
-		this.categoryId = categoryId;
-		this.userId = userId;
-		this.description = description;
-	}
-
 	public IncomeRequestDTO() {
 		super();
 	}
