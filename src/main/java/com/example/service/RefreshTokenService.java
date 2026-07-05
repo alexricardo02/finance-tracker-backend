@@ -26,21 +26,13 @@ public class RefreshTokenService {
     
     @Transactional
     public RefreshToken createRefreshToken(int userId) {
-        // 1. Buscamos si el usuario ya tiene un token guardado en la BD
         RefreshToken refreshToken = refreshTokenRepository.findByUserId(userId)
-                .orElse(new RefreshToken()); // Si no tiene, creamos uno nuevo vacío
+                .orElse(new RefreshToken());
 
-        // 2. Le asignamos o actualizamos los valores
         refreshToken.setUser(userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found")));
         refreshToken.setToken(java.util.UUID.randomUUID().toString());
-        
-        // (Nota: mantén tu variable de tiempo original si se llama distinto, 
-        // a veces es refreshTokenDurationMs u otra constante que tengas configurada)
-        refreshToken.setExpiryDate(java.time.Instant.now().plusMillis(86400000L)); // Ejemplo: 24 horas
-        
-        // 3. Guardamos. 
-        // Como el objeto ya existe, Hibernate hará un UPDATE 
-        // en lugar de un INSERT, esquivando el error de "duplicate key".
+        refreshToken.setExpiryDate(java.time.Instant.now().plusMillis(refreshTokenDurationMs)); // <-- antes: 86400000L hardcodeado
+
         return refreshTokenRepository.save(refreshToken);
     }
 
