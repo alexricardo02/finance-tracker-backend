@@ -23,4 +23,10 @@ public class CacheService {
             redisTemplate.delete(keys);
         }
     }
+    
+ // WHY: Explicitly target global dictionary keys that don't contain a username
+    public void evictGlobalCache(String cacheName, String key) {
+        redisTemplate.delete(cacheName + "::" + key);
+    }
+    
 }

@@ -167,6 +167,7 @@ public class ExpenseService {
 
 		Expense savedExpense = expenseRepository.save(expense);
 		cacheService.evictUserFinancialCache(username);
+		cacheService.evictGlobalCache("all_expenses_types", "all");
 		return convertToResponseDTO(savedExpense);
 	}
 
@@ -200,6 +201,7 @@ public class ExpenseService {
 		expense.setDeletedBy(username);
 		expenseRepository.save(expense);
 		cacheService.evictUserFinancialCache(username);
+		cacheService.evictGlobalCache("all_expenses_types", "all");
 	}
 
 	@Transactional
@@ -223,6 +225,7 @@ public class ExpenseService {
 
 		Expense updatedExpense = expenseRepository.save(existingExpense);
 		cacheService.evictUserFinancialCache(username);
+		cacheService.evictGlobalCache("all_expenses_types", "all");
 		return convertToResponseDTO(updatedExpense);
 	}
 
