@@ -7,6 +7,9 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
+
+import com.example.models.Role;
+
 import org.springframework.beans.factory.annotation.Value;
 import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
@@ -30,9 +33,10 @@ public class JwtUtil {
     private final long expirationTime = 900000; // 15 minutos
     
     // GENERAR TOKEN
-    public String generateToken(String username) {
+    public String generateToken(String username, Role role) {
         return Jwts.builder()
                 .setSubject(username)
+                .claim("role", role.name())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(key)
@@ -59,6 +63,11 @@ public class JwtUtil {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+    
+    public String extractRole(String token) {
+        Object role = getClaims(token).get("role");
+        return role != null ? role.toString() : Role.USER.name();
     }
 
 }
