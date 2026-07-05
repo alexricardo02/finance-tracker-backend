@@ -1,7 +1,8 @@
 package com.example.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
+
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
@@ -10,7 +11,7 @@ import java.util.Set;
 public class CacheService {
 
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    private StringRedisTemplate redisTemplate;
 
     // WHY: Programmatic eviction allows pattern-matching, preventing global cache wipes (allEntries=true)
     // and ensuring tenant isolation in a shared Redis instance.
