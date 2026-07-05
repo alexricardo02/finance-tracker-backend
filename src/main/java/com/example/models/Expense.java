@@ -35,6 +35,10 @@ public class Expense {
 	
 	@Column(name = "expense_description", columnDefinition = "text")
     private String description;
+	
+	@Enumerated(EnumType.STRING)
+    @Column(name = "payment_method")
+    private PaymentMethod paymentMethod;
     
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name="user_id", nullable = false)
@@ -44,13 +48,14 @@ public class Expense {
     public Expense() {
     }
 
-    public Expense(int id, double amount, String currency, LocalDate date, Category category, String type, String description) {
+    public Expense(int id, double amount, String currency, LocalDate date, Category category, String type, String description, PaymentMethod paymentMethod) {
         this.id = id;
         this.amount = amount;
         this.currency = currency;
         this.date = date;
         this.category = category;
         this.description = description;
+        this.paymentMethod = paymentMethod;
     }
     
 
@@ -110,7 +115,16 @@ public class Expense {
 	public void setUser(User user) {
 		this.user = user;
 	}
+
+	public PaymentMethod getPaymentMethod() {
+		return paymentMethod;
+	}
+
+	public void setPaymentMethod(PaymentMethod paymentMethod) {
+		this.paymentMethod = paymentMethod;
+	}
     
+	
     
 
 

@@ -1,5 +1,9 @@
 package com.example.dataTransferObjects;
+import com.example.models.PaymentMethod;
 import com.fasterxml.jackson.annotation.JsonFormat;
+
+import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDate;
 
 public class ExpenseResponseDTO {
@@ -12,13 +16,15 @@ public class ExpenseResponseDTO {
 	private Integer categoryId;
 	private String categoryName;
 	private String description;
+	@NotNull(message = "Payment method is mandatory")
+    private PaymentMethod paymentMethod;
 	private Integer userId;
 
 	public ExpenseResponseDTO() {
 		super();
 	}
 	
-	public ExpenseResponseDTO(int id, double amount, String currency, LocalDate date, Integer categoryId, String categoryName, String description) {
+	public ExpenseResponseDTO(int id, double amount, String currency, LocalDate date, Integer categoryId, String categoryName, String description, PaymentMethod paymentMethod) {
         this.id = id;
         this.amount = amount;
         this.currency = currency;
@@ -26,6 +32,7 @@ public class ExpenseResponseDTO {
         this.categoryId = categoryId;
         this.categoryName = categoryName;
         this.description = description;
+        this.paymentMethod = paymentMethod;
     }
 
 	public ExpenseResponseDTO(Integer id, Double amount, String currency, LocalDate date, String categoryName,
@@ -104,5 +111,15 @@ public class ExpenseResponseDTO {
 	public void setCategoryName(String categoryName) {
 		this.categoryName = categoryName;
 	}
+
+	public PaymentMethod getPaymentMethod() {
+		return paymentMethod;
+	}
+
+	public void setPaymentMethod(PaymentMethod paymentMethod) {
+		this.paymentMethod = paymentMethod;
+	}
+	
+	
 
 }

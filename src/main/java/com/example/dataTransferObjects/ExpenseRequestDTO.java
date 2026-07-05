@@ -1,5 +1,6 @@
 package com.example.dataTransferObjects;
 
+import com.example.models.PaymentMethod;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDate;
@@ -23,6 +24,9 @@ public class ExpenseRequestDTO {
 	private Integer categoryId; // Added field
 
 	private String description;
+	
+	@NotNull(message = "Payment method is mandatory")
+    private PaymentMethod paymentMethod;
 
 	@NotNull(message = "User ID is required")
 	@Positive(message = "User ID must be positive")
@@ -89,6 +93,14 @@ public class ExpenseRequestDTO {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public PaymentMethod getPaymentMethod() {
+		return paymentMethod;
+	}
+
+	public void setPaymentMethod(PaymentMethod paymentMethod) {
+		this.paymentMethod = paymentMethod;
 	}
 
 	@Override

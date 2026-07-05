@@ -46,7 +46,7 @@ public class IncomeService {
 		return new IncomeResponseDTO(income.getIncomeId(), income.getAmount(), income.getCurrency(), income.getDate(),
 				income.getCategory() != null ? income.getCategory().getCategoryId() : null,
 				income.getCategory() != null ? income.getCategory().getName() : "Sin Categoría",
-				income.getDescription(), income.getUser().getUserId());
+				income.getDescription(), income.getUser().getUserId(), income.getPaymentMethod());
 
 	}
 
@@ -78,6 +78,7 @@ public class IncomeService {
 		income.setDate(requestDTO.getDate());
 		income.setDescription(requestDTO.getDescription());
 		income.setCategory(category);
+		income.setPaymentMethod(requestDTO.getPaymentMethod());
 
 		User user = userRepository.findByUsername(username)
 				.orElseThrow(() -> new EntityNotFoundException("User not found"));
@@ -161,6 +162,7 @@ public class IncomeService {
 		existingIncome.setDescription(incomeRequestDTO.getDescription());
 		existingIncome.setCurrency(incomeRequestDTO.getCurrency());
 		existingIncome.setCategory(category);
+		existingIncome.setPaymentMethod(incomeRequestDTO.getPaymentMethod());
 
 		Income updatedIncome = incomeRepository.save(existingIncome);
 

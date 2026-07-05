@@ -34,12 +34,16 @@ public class Income {
 	@Column(name="description")
     private String description;
 	
+	@Enumerated(EnumType.STRING)
+    @Column(name = "payment_method")
+    private PaymentMethod paymentMethod;
+	
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name="user_id", nullable = false)
 	private User user;
 	
 
-    public Income(Integer incomeId, double amount, String currency, LocalDate date, User user, Category category, String type, String description) {
+    public Income(Integer incomeId, double amount, String currency, LocalDate date, User user, Category category, String type, String description, PaymentMethod paymentMethod) {
         this.incomeId = incomeId;
     	this.amount = amount;
         this.currency = currency;
@@ -47,6 +51,7 @@ public class Income {
         this.user = user;
         this.category = category;
         this.description = description;
+        this.paymentMethod = paymentMethod;
     }
 
     public Income() {
@@ -108,5 +113,14 @@ public class Income {
 		this.description = description;
 	}
 
+	public PaymentMethod getPaymentMethod() {
+		return paymentMethod;
+	}
+
+	public void setPaymentMethod(PaymentMethod paymentMethod) {
+		this.paymentMethod = paymentMethod;
+	}
+
+	
 
 }
