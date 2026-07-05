@@ -15,11 +15,15 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.example.security.IdempotencyFilter;
 import com.example.security.JwtRequestFilter;
+import com.example.security.RateLimitFilter;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+	
+	@Autowired
+	private RateLimitFilter rateLimitFilter;
 	
 	@Autowired
 	private IdempotencyFilter idempotencyFilter;
@@ -48,6 +52,7 @@ public class SecurityConfig {
 
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(idempotencyFilter, JwtRequestFilter.class);
+        http.addFilterAfter(rateLimitFilter, JwtRequestFilter.class);
 
         return http.build();
     }
