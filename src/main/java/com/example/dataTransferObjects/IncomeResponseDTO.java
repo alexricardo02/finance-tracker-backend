@@ -115,20 +115,6 @@ public class IncomeResponseDTO {
 		this.paymentMethod = paymentMethod;
 	}
 
-	public IncomeResponseDTO(Integer incomeId, Double amount, String currency, LocalDate date, Integer categoryId,
-			String categoryName, String description, Integer userId, PaymentMethod paymentMethod) {
-		super();
-		this.incomeId = incomeId;
-		this.amount = amount;
-		this.currency = currency;
-		this.date = date;
-		this.categoryId = categoryId;
-		this.categoryName = categoryName;
-		this.description = description;
-		this.userId = userId;
-		this.paymentMethod = paymentMethod;
-	}
-
 	public IncomeResponseDTO() {
 		super();
 	}
