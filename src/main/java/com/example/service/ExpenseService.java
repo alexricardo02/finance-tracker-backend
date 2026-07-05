@@ -1,6 +1,7 @@
 package com.example.service;
 
 import java.time.LocalDate;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,7 +18,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-
+import com.example.service.CacheService;
 import com.example.dataTransferObjects.ExpenseRequestDTO;
 import com.example.dataTransferObjects.ExpenseResponseDTO;
 import com.example.dataTransferObjects.PagedResponse;
@@ -43,6 +44,9 @@ public class ExpenseService {
 	private ExpenseRepository expenseRepository;
 
 	@Autowired
+	private CacheService cacheService;
+
+	@Autowired
 	UserRepository userRepository;
 
 	private ExpenseResponseDTO convertToResponseDTO(Expense expense) {
@@ -51,64 +55,60 @@ public class ExpenseService {
 		dto.setAmount(expense.getExpenseAmount());
 		dto.setCurrency(expense.getCurrency());
 		dto.setDate(expense.getExpenseDate());
-		
+
 		if (expense.getCategory() != null) {
 			dto.setCategoryId(expense.getCategory().getCategoryId());
 			dto.setCategoryName(expense.getCategory().getName());
 		} else {
 			dto.setCategoryName("Sin Categoría");
 		}
-		
+
 		dto.setDescription(expense.getExpenseDescription());
 		if (expense.getUser() != null) {
 			dto.setUserId(expense.getUser().getUserId());
 		}
 		dto.setPaymentMethod(expense.getPaymentMethod());
-		
+
 		return dto;
 	}
-	
-	public PagedResponse<ExpenseResponseDTO> getFilteredExpenses(
-            String username, LocalDate startDate, LocalDate endDate, 
-            Long categoryId, PaymentMethod method, int page, int size) {
-        
-        Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
 
-        Specification<Expense> spec = (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            
-            // WHY: Links the transaction to the principal.getName() passed from the controller
-            predicates.add(cb.equal(root.get("user").get("username"), username)); 
-            
-            if (startDate != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("date"), startDate));
-            }
-            if (endDate != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("date"), endDate));
-            }
-            if (categoryId != null) {
-                predicates.add(cb.equal(root.get("category").get("categoryId"), categoryId));
-            }
-            if (method != null) {
-                predicates.add(cb.equal(root.get("paymentMethod"), method));
-            }
-            
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
+	public PagedResponse<ExpenseResponseDTO> getFilteredExpenses(String username, LocalDate startDate,
+			LocalDate endDate, Long categoryId, PaymentMethod method, int page, int size) {
 
-Page<ExpenseResponseDTO> expensesPage = expenseRepository.findAll(spec, pageable).map(this::convertToResponseDTO);
-        
-        // WHY: Explicitly matching the exact 6-parameter constructor of PagedResponse resolves 
-        // the generic inference failure and maps all pagination metadata accurately.
-        return new PagedResponse<>(
-                expensesPage.getContent(), 
-                expensesPage.getNumber(), 
-                expensesPage.getSize(), 
-                expensesPage.getTotalElements(), 
-                expensesPage.getTotalPages(),
-                expensesPage.isLast()
-        );
-    }
+		Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
+
+		Specification<Expense> spec = (root, query, cb) -> {
+			List<Predicate> predicates = new ArrayList<>();
+
+			// WHY: Links the transaction to the principal.getName() passed from the
+			// controller
+			predicates.add(cb.equal(root.get("user").get("username"), username));
+
+			if (startDate != null) {
+				predicates.add(cb.greaterThanOrEqualTo(root.get("date"), startDate));
+			}
+			if (endDate != null) {
+				predicates.add(cb.lessThanOrEqualTo(root.get("date"), endDate));
+			}
+			if (categoryId != null) {
+				predicates.add(cb.equal(root.get("category").get("categoryId"), categoryId));
+			}
+			if (method != null) {
+				predicates.add(cb.equal(root.get("paymentMethod"), method));
+			}
+
+			return cb.and(predicates.toArray(new Predicate[0]));
+		};
+
+		Page<ExpenseResponseDTO> expensesPage = expenseRepository.findAll(spec, pageable)
+				.map(this::convertToResponseDTO);
+
+		// WHY: Explicitly matching the exact 6-parameter constructor of PagedResponse
+		// resolves
+		// the generic inference failure and maps all pagination metadata accurately.
+		return new PagedResponse<>(expensesPage.getContent(), expensesPage.getNumber(), expensesPage.getSize(),
+				expensesPage.getTotalElements(), expensesPage.getTotalPages(), expensesPage.isLast());
+	}
 
 	private Integer getUserIdByUsername(String username) {
 
@@ -135,9 +135,6 @@ Page<ExpenseResponseDTO> expensesPage = expenseRepository.findAll(spec, pageable
 	}
 
 	@Transactional
-	@CacheEvict(value = { "all_expenses_types", "expenses_type", "expenses_last_7_days", "expenses_last_months",
-			"expenses_last_3_months", "expenses_last_6_months", "expenses_last_year", "expenses_day", "expenses_month",
-			"expenses_year", "user_expenses" }, allEntries = true)
 	public ExpenseResponseDTO saveExpense(ExpenseRequestDTO requestDTO, String username) {
 
 		if (requestDTO == null) {
@@ -169,6 +166,7 @@ Page<ExpenseResponseDTO> expensesPage = expenseRepository.findAll(spec, pageable
 		expense.setUser(user);
 
 		Expense savedExpense = expenseRepository.save(expense);
+		cacheService.evictUserFinancialCache(username);
 		return convertToResponseDTO(savedExpense);
 	}
 
@@ -189,27 +187,22 @@ Page<ExpenseResponseDTO> expensesPage = expenseRepository.findAll(spec, pageable
 	}
 
 	@Transactional
-	@CacheEvict(value = { "all_expenses_types", "expenses_type", "expenses_last_7_days", "expenses_last_months",
-			"expenses_last_3_months", "expenses_last_6_months", "expenses_last_year", "expenses_day", "expenses_month",
-			"expenses_year", "user_expenses" }, allEntries = true)
 	public void deleteExpense(Integer id, String username) {
 
-	    Expense expense = expenseRepository.findById(id)
-	            .orElseThrow(() -> new RuntimeException("Egreso no encontrado con ID: " + id));
+		Expense expense = expenseRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Egreso no encontrado con ID: " + id));
 
-	    if (!expense.getUser().getUsername().equals(username)) {
-	        throw new SecurityException("No tienes permiso para eliminar este egreso");
-	    }
+		if (!expense.getUser().getUsername().equals(username)) {
+			throw new SecurityException("No tienes permiso para eliminar este egreso");
+		}
 
-	    expense.setDeletedAt(java.time.Instant.now());
-	    expense.setDeletedBy(username);
-	    expenseRepository.save(expense);  // <-- antes: incomeRepository.deleteById(id);
+		expense.setDeletedAt(java.time.Instant.now());
+		expense.setDeletedBy(username);
+		expenseRepository.save(expense);
+		cacheService.evictUserFinancialCache(username);
 	}
 
 	@Transactional
-	@CacheEvict(value = { "all_expenses_types", "expenses_type", "expenses_last_7_days", "expenses_last_months",
-			"expenses_last_3_months", "expenses_last_6_months", "expenses_last_year", "expenses_day", "expenses_month",
-			"expenses_year", "user_expenses" }, allEntries = true)
 	public ExpenseResponseDTO updateExpense(int expenseId, ExpenseRequestDTO requestDTO, String username) {
 
 		Expense existingExpense = expenseRepository.findById(expenseId)
@@ -229,6 +222,7 @@ Page<ExpenseResponseDTO> expensesPage = expenseRepository.findAll(spec, pageable
 		existingExpense.setPaymentMethod(requestDTO.getPaymentMethod());
 
 		Expense updatedExpense = expenseRepository.save(existingExpense);
+		cacheService.evictUserFinancialCache(username);
 		return convertToResponseDTO(updatedExpense);
 	}
 
