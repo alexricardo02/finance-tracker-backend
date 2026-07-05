@@ -46,10 +46,26 @@ public class ExpenseService {
 	UserRepository userRepository;
 
 	private ExpenseResponseDTO convertToResponseDTO(Expense expense) {
-		return new ExpenseResponseDTO(expense.getExpenseID(), expense.getExpenseAmount(), expense.getCurrency(),
-				expense.getExpenseDate(), expense.getCategory() != null ? expense.getCategory().getCategoryId() : null,
-				expense.getCategory() != null ? expense.getCategory().getName() : "Sin Categoría",
-				expense.getExpenseDescription(), expense.getPaymentMethod());
+		ExpenseResponseDTO dto = new ExpenseResponseDTO();
+		dto.setId(expense.getExpenseID());
+		dto.setAmount(expense.getExpenseAmount());
+		dto.setCurrency(expense.getCurrency());
+		dto.setDate(expense.getExpenseDate());
+		
+		if (expense.getCategory() != null) {
+			dto.setCategoryId(expense.getCategory().getCategoryId());
+			dto.setCategoryName(expense.getCategory().getName());
+		} else {
+			dto.setCategoryName("Sin Categoría");
+		}
+		
+		dto.setDescription(expense.getExpenseDescription());
+		if (expense.getUser() != null) {
+			dto.setUserId(expense.getUser().getUserId());
+		}
+		dto.setPaymentMethod(expense.getPaymentMethod());
+		
+		return dto;
 	}
 	
 	public PagedResponse<ExpenseResponseDTO> getFilteredExpenses(

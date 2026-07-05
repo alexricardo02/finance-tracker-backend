@@ -23,30 +23,6 @@ public class ExpenseResponseDTO {
 	public ExpenseResponseDTO() {
 		super();
 	}
-	
-	public ExpenseResponseDTO(int id, double amount, String currency, LocalDate date, Integer categoryId, String categoryName, String description, PaymentMethod paymentMethod) {
-        this.id = id;
-        this.amount = amount;
-        this.currency = currency;
-        this.date = date;
-        this.categoryId = categoryId;
-        this.categoryName = categoryName;
-        this.description = description;
-        this.paymentMethod = paymentMethod;
-    }
-
-	public ExpenseResponseDTO(Integer id, Double amount, String currency, LocalDate date, String categoryName,
-			Integer categoryId, String description, Integer userId) {
-		super();
-		this.id = id;
-		this.amount = amount;
-		this.currency = currency;
-		this.date = date;
-		this.categoryId = categoryId;
-		this.categoryName = categoryName;
-		this.description = description;
-		this.userId = userId;
-	}
 
 	public Integer getCategoryId() {
 		return categoryId;

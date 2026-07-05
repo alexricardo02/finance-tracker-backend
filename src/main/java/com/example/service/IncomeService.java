@@ -47,12 +47,26 @@ public class IncomeService {
 	private UserRepository userRepository;
 
 	private IncomeResponseDTO convertToResponseDTO(Income income) {
-
-		return new IncomeResponseDTO(income.getIncomeId(), income.getAmount(), income.getCurrency(), income.getDate(),
-				income.getCategory() != null ? income.getCategory().getCategoryId() : null,
-				income.getCategory() != null ? income.getCategory().getName() : "Sin Categoría",
-				income.getDescription(), income.getUser().getUserId(), income.getPaymentMethod());
-
+		IncomeResponseDTO dto = new IncomeResponseDTO();
+		dto.setIncomeId(income.getIncomeId());
+		dto.setAmount(income.getAmount());
+		dto.setCurrency(income.getCurrency());
+		dto.setDate(income.getDate());
+		
+		if (income.getCategory() != null) {
+			dto.setCategoryId(income.getCategory().getCategoryId());
+			dto.setCategoryName(income.getCategory().getName());
+		} else {
+			dto.setCategoryName("Sin Categoría");
+		}
+		
+		dto.setDescription(income.getDescription());
+		if (income.getUser() != null) {
+			dto.setUserId(income.getUser().getUserId());
+		}
+		dto.setPaymentMethod(income.getPaymentMethod());
+		
+		return dto;
 	}
 
 	public PagedResponse<IncomeResponseDTO> getFilteredIncomes(String username, LocalDate startDate, LocalDate endDate,
