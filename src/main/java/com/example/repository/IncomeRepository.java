@@ -23,17 +23,19 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpe
 	
 		// Obtener todas las incomes de un tipo
 		@Query(
-		        value = "SELECT * FROM incomes i " +
-		                "WHERE i.type = :incomeTypeName AND i.user_id = :userId",
-		        nativeQuery = true // ¡Indica que es SQL!
+		        value = "SELECT i.* FROM incomes i " +
+                        "JOIN categories c ON i.category_id = c.category_id " +
+		                "WHERE c.name = :incomeTypeName AND i.user_id = :userId",
+		        nativeQuery = true
 		    )
 		List<Income> findByIncomeTypeNameAndUser(@Param("incomeTypeName") String incomeTypeName, @Param("userId") Integer userId);
 	
 		
 		// Obtener total de ingresos por type
 		@Query(
-				value = "SELECT COALESCE(SUM(i.amount)) FROM incomes i " +
-		                "WHERE i.type = :incomeTypeName AND i.user_id = :userId",
+				value = "SELECT COALESCE(SUM(i.amount), 0) FROM incomes i " +
+                        "JOIN categories c ON i.category_id = c.category_id " +
+		                "WHERE c.name = :incomeTypeName AND i.user_id = :userId",
 				nativeQuery = true
 				)
 		Double getTotalIncomeAmountByTypeAndUser(@Param("incomeTypeName") String incomeTypeName, @Param("userId") Integer userId);
