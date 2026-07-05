@@ -46,7 +46,7 @@ public class ExpenseService {
 		return new ExpenseResponseDTO(expense.getExpenseID(), expense.getExpenseAmount(), expense.getCurrency(),
 				expense.getExpenseDate(), expense.getCategory() != null ? expense.getCategory().getCategoryId() : null,
 				expense.getCategory() != null ? expense.getCategory().getName() : "Sin Categoría",
-				expense.getExpenseDescription());
+				expense.getExpenseDescription(), expense.getPaymentMethod());
 	}
 
 	private Integer getUserIdByUsername(String username) {
@@ -99,7 +99,7 @@ public class ExpenseService {
 		expense.setCurrency(requestDTO.getCurrency());
 		expense.setExpenseDate(requestDTO.getDate());
 		expense.setExpenseDescription(requestDTO.getDescription());
-
+		expense.setPaymentMethod(requestDTO.getPaymentMethod());
 		expense.setCategory(category);
 
 		User user = userRepository.findByUsername(username)
@@ -167,6 +167,7 @@ public class ExpenseService {
 		existingExpense.setExpenseDate(requestDTO.getDate());
 		existingExpense.setExpenseDescription(requestDTO.getDescription());
 		existingExpense.setCategory(category);
+		existingExpense.setPaymentMethod(requestDTO.getPaymentMethod());
 
 		Expense updatedExpense = expenseRepository.save(existingExpense);
 		return convertToResponseDTO(updatedExpense);

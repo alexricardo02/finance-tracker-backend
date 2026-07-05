@@ -2,6 +2,7 @@ package com.example.dataTransferObjects;
 
 import java.time.LocalDate;
 
+import com.example.models.PaymentMethod;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -22,6 +23,9 @@ public class IncomeRequestDTO {
     private Integer categoryId; 
 	
 	private String description;
+	
+	@NotNull(message = "Payment method is mandatory")
+    private PaymentMethod paymentMethod;
     
 	@NotNull(message = "El usuario debe existir")
     private Integer userId;
@@ -69,6 +73,15 @@ public class IncomeRequestDTO {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+	
+
+	public PaymentMethod getPaymentMethod() {
+		return paymentMethod;
+	}
+
+	public void setPaymentMethod(PaymentMethod paymentMethod) {
+		this.paymentMethod = paymentMethod;
 	}
 
 	public IncomeRequestDTO(@Positive(message = "El income tiene que ser positivo") Double amount,
