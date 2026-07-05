@@ -24,8 +24,8 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpe
 		// Obtener todas las incomes de un tipo
 		@Query(
 		        value = "SELECT i.* FROM incomes i " +
-                        "JOIN categories c ON i.category_id = c.category_id " +
-		                "WHERE c.name = :incomeTypeName AND i.user_id = :userId",
+		                "JOIN categories c ON i.category_id = c.category_id " +
+		                "WHERE c.name = :incomeTypeName AND i.user_id = :userId AND i.deleted_at IS NULL",
 		        nativeQuery = true
 		    )
 		List<Income> findByIncomeTypeNameAndUser(@Param("incomeTypeName") String incomeTypeName, @Param("userId") Integer userId);
@@ -33,45 +33,45 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpe
 		
 		// Obtener total de ingresos por type
 		@Query(
-				value = "SELECT COALESCE(SUM(i.amount), 0) FROM incomes i " +
-                        "JOIN categories c ON i.category_id = c.category_id " +
-		                "WHERE c.name = :incomeTypeName AND i.user_id = :userId",
-				nativeQuery = true
-				)
+		        value = "SELECT COALESCE(SUM(i.amount), 0) FROM incomes i " +
+		                "JOIN categories c ON i.category_id = c.category_id " +
+		                "WHERE c.name = :incomeTypeName AND i.user_id = :userId AND i.deleted_at IS NULL",
+		        nativeQuery = true
+		        )
 		Double getTotalIncomeAmountByTypeAndUser(@Param("incomeTypeName") String incomeTypeName, @Param("userId") Integer userId);
 		
 		
 		//Get total amount of Incomes per month
 		@Query(
-				value = "SELECT COALESCE(SUM(i.amount)) FROM incomes i " +
-						"WHERE MONTH(i.date) = :monthNumber AND i.user_id = :userId",
-				nativeQuery = true
-				)
+		        value = "SELECT COALESCE(SUM(i.amount)) FROM incomes i " +
+		                "WHERE MONTH(i.date) = :monthNumber AND i.user_id = :userId AND i.deleted_at IS NULL",
+		        nativeQuery = true
+		        )
 		Double getTotalIncomeAmountByMonthAndUser(@Param("monthNumber") Integer monthNumber, @Param("userId") Integer userId);
 		
 		//Get total amount of Incomes per year
-				@Query(
-						value = "SELECT COALESCE(SUM(i.amount)) FROM incomes i " +
-								"WHERE YEAR(i.date) = :year AND i.user_id = :userId",
-						nativeQuery = true
-						)
+		@Query(
+		        value = "SELECT COALESCE(SUM(i.amount)) FROM incomes i " +
+		                "WHERE YEAR(i.date) = :year AND i.user_id = :userId AND i.deleted_at IS NULL",
+		        nativeQuery = true
+		        )
 		Double getTotalIncomeAmountByYearAndUser(@Param("year") Integer year, @Param("userId") Integer userId);
 				
 				
 		//Get total amount of Incomes per day
-				@Query(
-						value = "SELECT COALESCE(SUM(i.amount)) FROM incomes i " +
-								"WHERE DAY(i.date) = :day AND i.user_id = :userId",
-						nativeQuery = true
-						)
+		@Query(
+		        value = "SELECT COALESCE(SUM(i.amount)) FROM incomes i " +
+		                "WHERE DAY(i.date) = :day AND i.user_id = :userId AND i.deleted_at IS NULL",
+		        nativeQuery = true
+		        )
 		Double getTotalIncomeAmountByDayAndUser(@Param("day") Integer day, @Param("userId") Integer userId);
 				
 				
 		@Query(
-				value = "SELECT COALESCE(SUM(i.amount), 0) FROM incomes i " +
-						"WHERE i.date BETWEEN :startDate AND :endDate AND i.user_id = :userId",
-		        nativeQuery = true // ¡Indica que es SQL!
-				)
+		        value = "SELECT COALESCE(SUM(i.amount), 0) FROM incomes i " +
+		                "WHERE i.date BETWEEN :startDate AND :endDate AND i.user_id = :userId AND i.deleted_at IS NULL",
+		        nativeQuery = true
+		        )
 		Double getTotalIncomeAmountBetweenAndUser(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, @Param("userId") Integer userId);
 
 		

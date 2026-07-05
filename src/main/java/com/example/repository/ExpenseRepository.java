@@ -21,58 +21,58 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>, JpaS
     Page<Expense> findByUserUserId(int userId, Pageable pageable);
 
 	// Obtener todas las expenses de un tipo
-	@Query(
-	        value = "SELECT * FROM expenses e " +
-	                "WHERE e.type = :expenseTypeName AND e.user_id = :userId",
-	        nativeQuery = true // ¡Indica que es SQL!
-	    )
+    @Query(
+            value = "SELECT * FROM expenses e " +
+                    "WHERE e.type = :expenseTypeName AND e.user_id = :userId AND e.deleted_at IS NULL",
+            nativeQuery = true
+        )
 	List<Expense> findByExpenseTypeNameAndUser(@Param("expenseTypeName") String expenseTypeName, @Param("userId") Integer userId);
 	
-	@Query(
-	        value = "SELECT DISTINCT e.type FROM expenses e WHERE e.type IS NOT NULL",
-	        nativeQuery = true // ¡Indica que es SQL!
-	    )
+    @Query(
+            value = "SELECT DISTINCT e.type FROM expenses e WHERE e.type IS NOT NULL AND e.deleted_at IS NULL",
+            nativeQuery = true
+        )
 	List<String> findAllExpenseTypes();
 	
-	@Query(
-			value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
-					"WHERE e.date BETWEEN :startDate AND :endDate AND e.user_id = :userId",
-	        nativeQuery = true // ¡Indica que es SQL!
-			)
+    @Query(
+            value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
+                    "WHERE e.date BETWEEN :startDate AND :endDate AND e.user_id = :userId AND e.deleted_at IS NULL",
+            nativeQuery = true
+            )
 	Double getTotalExpenseAmountBetweenAndUser(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, @Param("userId") Integer userId);
 	
 	// obtener total de gasto por type
-	@Query(
-			value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
-					"WHERE e.type = :expenseTypeName AND e.user_id = :userId",
-			nativeQuery = true
-			)
+    @Query(
+            value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
+                    "WHERE e.type = :expenseTypeName AND e.user_id = :userId AND e.deleted_at IS NULL",
+            nativeQuery = true
+            )
 	Double getTotalExpenseAmountByTypeAndUser(@Param("expenseTypeName") String expenseTypeName, @Param("userId") Integer userId);
 	
 	
 	//Get total amount of Expenses per month
-	@Query(
-			value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
-					"WHERE MONTH(e.date) = :monthNumber AND e.user_id = :userId",
-			nativeQuery = true
-			)
+    @Query(
+            value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
+                    "WHERE MONTH(e.date) = :monthNumber AND e.user_id = :userId AND e.deleted_at IS NULL",
+            nativeQuery = true
+            )
 	Double getTotalExpenseAmountByMonthAndUser(@Param("monthNumber") Integer monthNumber, @Param("userId") Integer userId);
 	
 	//Get total amount of Expenses per year
-	@Query(
-			value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
-					"WHERE YEAR(e.date) = :year AND e.user_id = :userId",
-			nativeQuery = true
-			)
+    @Query(
+            value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
+                    "WHERE YEAR(e.date) = :year AND e.user_id = :userId AND e.deleted_at IS NULL",
+            nativeQuery = true
+            )
 	Double getTotalExpenseAmountByYearAndUser(@Param("year") Integer year, @Param("userId") Integer userId);
 	
 	
 	//Get total amount of Expenses per day
-	@Query(
-			value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
-					"WHERE DAY(e.date) = :day AND e.user_id = :userId",
-			nativeQuery = true
-			)
+    @Query(
+            value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
+                    "WHERE DAY(e.date) = :day AND e.user_id = :userId AND e.deleted_at IS NULL",
+            nativeQuery = true
+            )
 	Double getTotalExpenseAmountByDayAndUser(@Param("day") Integer day, @Param("userId") Integer userId);
 
 

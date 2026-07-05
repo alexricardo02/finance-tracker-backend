@@ -192,20 +192,18 @@ Page<ExpenseResponseDTO> expensesPage = expenseRepository.findAll(spec, pageable
 	@CacheEvict(value = { "all_expenses_types", "expenses_type", "expenses_last_7_days", "expenses_last_months",
 			"expenses_last_3_months", "expenses_last_6_months", "expenses_last_year", "expenses_day", "expenses_month",
 			"expenses_year", "user_expenses" }, allEntries = true)
-	public void deleteExpense(int id, String username) {
+	public void deleteExpense(Integer id, String username) {
 
-		Expense expense = expenseRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Gasto no encontrado con ID: " + id));
+	    Expense expense = expenseRepository.findById(id)
+	            .orElseThrow(() -> new RuntimeException("Egreso no encontrado con ID: " + id));
 
-		if (!expense.getUser().getUsername().equals(username)) {
-			throw new SecurityException("No tienes permiso para eliminar este gasto");
-		}
+	    if (!expense.getUser().getUsername().equals(username)) {
+	        throw new SecurityException("No tienes permiso para eliminar este egreso");
+	    }
 
-		if (!expenseRepository.existsById(id)) {
-			throw new RuntimeException("Gasto no encontrado con ID: " + id);
-		}
-
-		expenseRepository.deleteById(id);
+	    expense.setDeletedAt(java.time.Instant.now());
+	    expense.setDeletedBy(username);
+	    expenseRepository.save(expense);  // <-- antes: incomeRepository.deleteById(id);
 	}
 
 	@Transactional

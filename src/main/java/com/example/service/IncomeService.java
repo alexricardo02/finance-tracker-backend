@@ -184,17 +184,16 @@ public class IncomeService {
 			"incomes_last_year", "user_incomes" }, allEntries = true)
 	public void deleteIncome(Integer id, String username) {
 
-		Income income = incomeRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Ingreso no encontrado con ID: " + id));
+	    Income income = incomeRepository.findById(id)
+	            .orElseThrow(() -> new RuntimeException("Ingreso no encontrado con ID: " + id));
 
-		if (!income.getUser().getUsername().equals(username)) {
-			throw new SecurityException("No tienes permiso para eliminar este ingreso");
-		}
+	    if (!income.getUser().getUsername().equals(username)) {
+	        throw new SecurityException("No tienes permiso para eliminar este ingreso");
+	    }
 
-		if (!incomeRepository.existsById(id)) {
-			throw new RuntimeException("Ingreso no encontrado con ID: " + id);
-		}
-		incomeRepository.deleteById(id);
+	    income.setDeletedAt(java.time.Instant.now());
+	    income.setDeletedBy(username);
+	    incomeRepository.save(income);
 	}
 
 	@Transactional
