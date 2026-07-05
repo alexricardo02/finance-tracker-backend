@@ -15,6 +15,7 @@ import com.example.dataTransferObjects.UserRegistrationDTO;
 import com.example.dataTransferObjects.UserUpdateDTO;
 import com.example.models.Expense;
 import com.example.models.Income;
+import com.example.models.Role;
 import com.example.models.User;
 import com.example.repository.CategoryRepository;
 import com.example.repository.UserRepository;
@@ -80,6 +81,12 @@ public class UserService {
         return convertToProfileDTO(savedUser);
         
     }
+	
+	public Role getRoleByUsername(String username) {
+	    return userRepository.findByUsername(username)
+	            .orElseThrow(() -> new EntityNotFoundException("User not found"))
+	            .getRole();
+	}
 	
 	public List<User> getAllUsers() {
 		return userRepository.findAll();

@@ -39,7 +39,7 @@ public class UserController {
 	@PostMapping("/login")
 	public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO loginDTO) {
 		UserProfileDTO userProfile = userService.login(loginDTO);
-	    String token = jwtUtil.generateToken(userProfile.getUsername());
+		String token = jwtUtil.generateToken(userProfile.getUsername(), userService.getRoleByUsername(userProfile.getUsername()));
 	    RefreshToken refreshToken = refreshTokenService.createRefreshToken(userProfile.getUserId());
 	    
 	    LoginResponseDTO response = new LoginResponseDTO(token, refreshToken.getToken(), userProfile);
@@ -68,7 +68,8 @@ public class UserController {
 
         // 3. Si todo está perfecto, generamos un nuevo Access Token de 15 minutos
         User user = tokenDB.getUser();
-        String newAccessToken = jwtUtil.generateToken(user.getUsername());
+        String newAccessToken = jwtUtil.generateToken(user.getUsername(), user.getRole());
+
 
         // 4. Se lo devolvemos al usuario
         LoginResponseDTO response = new LoginResponseDTO(newAccessToken, requestRefreshToken, null);

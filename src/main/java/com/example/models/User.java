@@ -6,6 +6,8 @@ import java.util.List;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -41,6 +43,10 @@ public class User {
 	
 	@OneToMany(mappedBy="user", cascade = CascadeType.ALL)
 	private List<Category> categories;
+	
+	@Enumerated(EnumType.STRING)
+	@Column(name = "role", nullable = false)
+	private Role role = Role.USER;
 	
 
 	public List<Category> getCategories() {
@@ -105,6 +111,14 @@ public class User {
 
     public void setCreation_date(Date creationDate) {
         this.creationDate = creationDate;
+    }
+    
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     public User() {
