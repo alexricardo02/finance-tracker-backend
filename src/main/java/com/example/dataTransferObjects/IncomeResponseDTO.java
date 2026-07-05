@@ -12,7 +12,7 @@ public class IncomeResponseDTO {
 	@JsonFormat(pattern = "yyyy-MM-dd")
 	private LocalDate date;
 	private Integer categoryId;
-	private String type;
+	private String categoryName;
 	private Integer userId;
 	private String description;
 
@@ -86,12 +86,12 @@ public class IncomeResponseDTO {
 		this.date = date;
 	}
 
-	public String getType() {
-		return type;
+	public String getCategoryName() {
+		return categoryName;
 	}
 
-	public void setType(String type) {
-		this.type = type;
+	public void setCategoryName(String categoryName) {
+		this.categoryName = categoryName;
 	}
 
 	public String getDescription() {
@@ -103,14 +103,14 @@ public class IncomeResponseDTO {
 	}
 
 	public IncomeResponseDTO(Integer incomeId, Double amount, String currency, LocalDate date, Integer categoryId,
-			String type, String description, Integer userId) {
+			String categoryName, String description, Integer userId) {
 		super();
 		this.incomeId = incomeId;
 		this.amount = amount;
 		this.currency = currency;
 		this.date = date;
 		this.categoryId = categoryId;
-		this.type = type;
+		this.categoryName = categoryName;
 		this.description = description;
 		this.userId = userId;
 	}

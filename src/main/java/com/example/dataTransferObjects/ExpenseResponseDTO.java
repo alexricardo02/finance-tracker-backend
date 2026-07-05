@@ -10,7 +10,7 @@ public class ExpenseResponseDTO {
 	@JsonFormat(pattern = "yyyy-MM-dd")
 	private LocalDate date;
 	private Integer categoryId;
-	private String typeName;
+	private String categoryName;
 	private String description;
 	private Integer userId;
 
@@ -18,17 +18,17 @@ public class ExpenseResponseDTO {
 		super();
 	}
 	
-	public ExpenseResponseDTO(int id, double amount, String currency, LocalDate date, Integer categoryId, String typeName, String description) {
+	public ExpenseResponseDTO(int id, double amount, String currency, LocalDate date, Integer categoryId, String categoryName, String description) {
         this.id = id;
         this.amount = amount;
         this.currency = currency;
         this.date = date;
         this.categoryId = categoryId;
-        this.typeName = typeName;
+        this.categoryName = categoryName;
         this.description = description;
     }
 
-	public ExpenseResponseDTO(Integer id, Double amount, String currency, LocalDate date, String typeName,
+	public ExpenseResponseDTO(Integer id, Double amount, String currency, LocalDate date, String categoryName,
 			Integer categoryId, String description, Integer userId) {
 		super();
 		this.id = id;
@@ -36,7 +36,7 @@ public class ExpenseResponseDTO {
 		this.currency = currency;
 		this.date = date;
 		this.categoryId = categoryId;
-		this.typeName = typeName;
+		this.categoryName = categoryName;
 		this.description = description;
 		this.userId = userId;
 	}
@@ -97,12 +97,12 @@ public class ExpenseResponseDTO {
 		this.description = description;
 	}
 
-	public String getTypeName() {
-		return typeName;
+	public String getCategoryName() {
+		return categoryName;
 	}
 
-	public void setTypeName(String typeName) {
-		this.typeName = typeName;
+	public void setCategoryName(String categoryName) {
+		this.categoryName = categoryName;
 	}
 
 }
