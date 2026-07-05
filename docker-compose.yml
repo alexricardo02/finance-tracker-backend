@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  #PostgreSQL
   postgres:
     image: postgres:15-alpine
     container_name: finance-postgres
@@ -14,8 +13,12 @@ services:
       POSTGRES_DB: finance_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  # Cache Redis
   redis:
     image: redis:7-alpine
     container_name: finance-redis
@@ -25,7 +28,26 @@ services:
     volumes:
       - redis_data:/data
 
-# Data persistency
+  backend:
+    build: .
+    container_name: finance-backend
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/finance_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: whatulookingfor
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      JWT_SECRET: local_dev_secret_change_in_production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
 volumes:
   postgres_data:
   redis_data:
