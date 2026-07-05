@@ -32,7 +32,7 @@ class ExpenseServiceTest {
     @Mock private ExpenseRepository expenseRepository;
     @Mock private UserRepository userRepository;
     @Mock private CategoryRepository categoryRepository;
-    @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private CacheService cacheService;
 
     @InjectMocks private ExpenseService expenseService;
 

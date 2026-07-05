@@ -1,6 +1,7 @@
 package com.example.service;
 
 import java.time.LocalDate;
+import com.example.service.CacheService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -45,6 +46,9 @@ public class IncomeService {
 
 	@Autowired
 	private UserRepository userRepository;
+	
+	@Autowired
+    private CacheService cacheService;
 
 	private IncomeResponseDTO convertToResponseDTO(Income income) {
 		IncomeResponseDTO dto = new IncomeResponseDTO();
@@ -112,9 +116,6 @@ public class IncomeService {
 	}
 
 	@Transactional
-	@CacheEvict(value = { "incomes_month", "incomes_type", "incomes_year", "incomes_day", "all_incomes",
-			"incomes_last_7_days", "incomes_last_month", "incomes_last_3_month", "incomes_last_6_months",
-			"incomes_last_year", "user_incomes" }, allEntries = true)
 	public IncomeResponseDTO saveIncome(IncomeRequestDTO requestDTO, String username) {
 
 		if (requestDTO.getAmount() == null) {
@@ -144,7 +145,9 @@ public class IncomeService {
 
 		income.setUser(user);
 		Income savedIncome = incomeRepository.save(income);
-
+		
+		cacheService.evictUserFinancialCache(username);
+		
 		return convertToResponseDTO(savedIncome);
 	}
 
@@ -179,9 +182,6 @@ public class IncomeService {
 	}
 
 	@Transactional
-	@CacheEvict(value = { "incomes_month", "incomes_type", "incomes_year", "incomes_day", "all_incomes",
-			"incomes_last_7_days", "incomes_last_month", "incomes_last_3_month", "incomes_last_6_months",
-			"incomes_last_year", "user_incomes" }, allEntries = true)
 	public void deleteIncome(Integer id, String username) {
 
 	    Income income = incomeRepository.findById(id)
@@ -194,12 +194,10 @@ public class IncomeService {
 	    income.setDeletedAt(java.time.Instant.now());
 	    income.setDeletedBy(username);
 	    incomeRepository.save(income);
+	    cacheService.evictUserFinancialCache(username);
 	}
 
 	@Transactional
-	@CacheEvict(value = { "incomes_month", "incomes_type", "incomes_year", "incomes_day", "all_incomes",
-			"incomes_last_7_days", "incomes_last_month", "incomes_last_3_month", "incomes_last_6_months",
-			"incomes_last_year", "user_incomes" }, allEntries = true)
 	public IncomeResponseDTO updateIncome(Integer incomeId, IncomeRequestDTO incomeRequestDTO, String username) {
 
 		Income existingIncome = incomeRepository.findById(incomeId)
@@ -220,6 +218,8 @@ public class IncomeService {
 		existingIncome.setPaymentMethod(incomeRequestDTO.getPaymentMethod());
 
 		Income updatedIncome = incomeRepository.save(existingIncome);
+		
+		cacheService.evictUserFinancialCache(username);
 
 		return convertToResponseDTO(updatedIncome);
 
