@@ -2,7 +2,7 @@ package com.example.controllers;
 
 import java.util.List;
 
-
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,10 +16,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.example.dataTransferObjects.ExpenseResponseDTO;
 import com.example.dataTransferObjects.IncomeRequestDTO;
 import com.example.dataTransferObjects.IncomeResponseDTO;
 import com.example.dataTransferObjects.PagedResponse;
+import com.example.models.PaymentMethod;
+
 import java.security.Principal;
+import java.time.LocalDate;
+
 import jakarta.validation.Valid;
 import com.example.service.IncomeService;
 
@@ -42,8 +48,21 @@ public class IncomeController {
 	}
 	
 	@GetMapping
-    public ResponseEntity<PagedResponse<IncomeResponseDTO>> getAllIncomes(Principal principal, @RequestParam(value= "page", defaultValue = "0", required = false) int page, @RequestParam(value = "size", defaultValue = "20", required = false) int size) {
-    	PagedResponse<IncomeResponseDTO> response = incomeService.getIncomesForCurrentUserPaginated(principal.getName(), page, size);
+    public ResponseEntity<PagedResponse<IncomeResponseDTO>> getAllIncomes(
+            Principal principal, 
+            @RequestParam(value= "page", defaultValue = "0", required = false) int page, 
+            // WHY: Increased size to ensure the statistics page aggregates the full period, not just the first 20 rows.
+            @RequestParam(value = "size", defaultValue = "1000", required = false) int size, 
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) PaymentMethod paymentMethod) {
+        
+        // WHY: We use a new service method that understands dynamic filtering via Specifications
+    	PagedResponse<IncomeResponseDTO> response = incomeService.getFilteredIncomes(
+                principal.getName(), startDate, endDate, categoryId, paymentMethod, page, size
+        );
+        
         return ResponseEntity.ok(response);
     }
 	

@@ -1,7 +1,7 @@
 package com.example.service;
 
 import java.time.LocalDate;
-
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -12,21 +12,26 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.example.dataTransferObjects.ExpenseResponseDTO;
 import com.example.dataTransferObjects.IncomeRequestDTO;
 import com.example.dataTransferObjects.IncomeResponseDTO;
 import com.example.dataTransferObjects.PagedResponse;
 import com.example.models.Category;
+import com.example.models.Expense;
 import com.example.models.Income;
+import com.example.models.PaymentMethod;
 import com.example.models.User;
 import com.example.repository.CategoryRepository;
 import com.example.repository.IncomeRepository;
 import com.example.repository.UserRepository;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 
 @Service
@@ -48,6 +53,43 @@ public class IncomeService {
 				income.getCategory() != null ? income.getCategory().getName() : "Sin Categoría",
 				income.getDescription(), income.getUser().getUserId(), income.getPaymentMethod());
 
+	}
+
+	public PagedResponse<IncomeResponseDTO> getFilteredIncomes(String username, LocalDate startDate, LocalDate endDate,
+			Long categoryId, PaymentMethod method, int page, int size) {
+
+		Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
+
+		Specification<Income> spec = (root, query, cb) -> {
+			List<Predicate> predicates = new ArrayList<>();
+
+			// WHY: Links the transaction to the principal.getName() passed from the
+			// controller
+			predicates.add(cb.equal(root.get("user").get("username"), username));
+
+			if (startDate != null) {
+				predicates.add(cb.greaterThanOrEqualTo(root.get("date"), startDate));
+			}
+			if (endDate != null) {
+				predicates.add(cb.lessThanOrEqualTo(root.get("date"), endDate));
+			}
+			if (categoryId != null) {
+				predicates.add(cb.equal(root.get("category").get("categoryId"), categoryId));
+			}
+			if (method != null) {
+				predicates.add(cb.equal(root.get("paymentMethod"), method));
+			}
+
+			return cb.and(predicates.toArray(new Predicate[0]));
+		};
+
+		Page<IncomeResponseDTO> incomesPage = incomeRepository.findAll(spec, pageable).map(this::convertToResponseDTO);
+
+		// WHY: Explicitly matching the exact 6-parameter constructor of PagedResponse
+		// resolves
+		// the generic inference failure and maps all pagination metadata accurately.
+		return new PagedResponse<>(incomesPage.getContent(), incomesPage.getNumber(), incomesPage.getSize(),
+				incomesPage.getTotalElements(), incomesPage.getTotalPages(), incomesPage.isLast());
 	}
 
 	private Integer getUserIdByUsername(String username) {
