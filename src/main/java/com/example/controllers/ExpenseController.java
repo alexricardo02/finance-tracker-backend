@@ -1,6 +1,7 @@
 package com.example.controllers;
 
 import org.springframework.http.HttpStatus;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -13,7 +14,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.format.annotation.DateTimeFormat;
+import com.example.models.PaymentMethod;
+import java.time.LocalDate;
 import com.example.dataTransferObjects.*;
 import jakarta.validation.Valid;
 import com.example.service.*;
@@ -37,8 +40,21 @@ public class ExpenseController {
     }
     
     @GetMapping
-    public ResponseEntity<PagedResponse<ExpenseResponseDTO>> getAllExpenses(Principal principal, @RequestParam(value= "page", defaultValue = "0", required = false) int page, @RequestParam(value = "size", defaultValue = "20", required = false) int size) {
-    	PagedResponse<ExpenseResponseDTO> response = expenseService.getExpensesForCurrentUserPaginated(principal.getName(), page, size);
+    public ResponseEntity<PagedResponse<ExpenseResponseDTO>> getAllExpenses(
+            Principal principal, 
+            @RequestParam(value= "page", defaultValue = "0", required = false) int page, 
+            // WHY: Increased size to ensure the statistics page aggregates the full period, not just the first 20 rows.
+            @RequestParam(value = "size", defaultValue = "1000", required = false) int size, 
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) PaymentMethod paymentMethod) {
+        
+        // WHY: We use a new service method that understands dynamic filtering via Specifications
+    	PagedResponse<ExpenseResponseDTO> response = expenseService.getFilteredExpenses(
+                principal.getName(), startDate, endDate, categoryId, paymentMethod, page, size
+        );
+        
         return ResponseEntity.ok(response);
     }
     
