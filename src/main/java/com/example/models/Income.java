@@ -43,7 +43,7 @@ public class Income {
 	private User user;
 	
 
-    public Income(Integer incomeId, double amount, String currency, LocalDate date, User user, Category category, String type, String description, PaymentMethod paymentMethod) {
+	public Income(Integer incomeId, double amount, String currency, LocalDate date, User user, Category category, String description, PaymentMethod paymentMethod) {
         this.incomeId = incomeId;
     	this.amount = amount;
         this.currency = currency;
