@@ -13,12 +13,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.example.security.IdempotencyFilter;
 import com.example.security.JwtRequestFilter;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+	
+	@Autowired
+	private IdempotencyFilter idempotencyFilter;
 
     @Autowired
     private JwtRequestFilter jwtRequestFilter;
@@ -43,6 +47,7 @@ public class SecurityConfig {
         );
 
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(idempotencyFilter, JwtRequestFilter.class);
 
         return http.build();
     }
