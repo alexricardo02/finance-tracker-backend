@@ -32,7 +32,7 @@ class IncomeServiceTest {
     @Mock private CategoryRepository categoryRepository;
     @Mock private IncomeRepository incomeRepository;
     @Mock private UserRepository userRepository;
-    @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private CacheService cacheService;
 
     @InjectMocks private IncomeService incomeService;
 
