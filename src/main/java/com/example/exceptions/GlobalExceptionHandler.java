@@ -46,6 +46,7 @@ public class GlobalExceptionHandler {
 	
 	@ExceptionHandler(RuntimeException.class)
 	public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException runtimeException) {
+		runtimeException.printStackTrace();
 		ErrorResponse error = new ErrorResponse(
 				HttpStatus.INTERNAL_SERVER_ERROR.value(),
 				"An unexpected error occurred",
