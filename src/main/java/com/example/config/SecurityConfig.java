@@ -31,10 +31,10 @@ public class SecurityConfig {
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // App sin estado (Stateless)
         .authorizeHttpRequests(auth -> auth
             // RUTAS PÚBLICAS: Cualquiera puede entrar
-        	.requestMatchers("/api/users/login", "/api/users/login/", "/api/users/register", "/api/users/register/", "/api/users/refresh", "/api/users/refresh/").permitAll()
+        	.requestMatchers("/actuator/health").permitAll()
             
             // RUTAS PRIVADAS: Requieren Token válido
-            .requestMatchers("/api/incomes/**", "/api/expenses/**").authenticated()
+        	.requestMatchers("/actuator/**").authenticated()
             
             .anyRequest().authenticated()
         );

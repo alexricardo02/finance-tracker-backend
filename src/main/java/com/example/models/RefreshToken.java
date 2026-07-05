@@ -12,7 +12,6 @@ public class RefreshToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    // Relación: Un usuario tiene un Refresh Token (1 sesión activa por dispositivo)
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "user_id")
     private User user;
@@ -25,7 +24,6 @@ public class RefreshToken {
     
     public RefreshToken() {}
     
-    // Getters y Setters
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
     
