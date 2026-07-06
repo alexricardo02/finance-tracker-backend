@@ -33,7 +33,7 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpe
 		
 		// Obtener total de ingresos por type
 		@Query(
-		        value = "SELECT COALESCE(SUM(i.amount), 0) FROM incomes i " +
+		        value = "SELECT COALESCE(SUM(COALESCE(i.amount_primary_currency, i.amount)), 0) FROM incomes i " +
 		                "JOIN categories c ON i.category_id = c.category_id " +
 		                "WHERE c.name = :incomeTypeName AND i.user_id = :userId AND i.deleted_at IS NULL",
 		        nativeQuery = true
@@ -43,7 +43,7 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpe
 		
 		//Get total amount of Incomes per month
 		@Query(
-		        value = "SELECT COALESCE(SUM(i.amount)) FROM incomes i " +
+		        value = "SELECT COALESCE(SUM(COALESCE(i.amount_primary_currency, i.amount))) FROM incomes i " +
 		                "WHERE MONTH(i.date) = :monthNumber AND i.user_id = :userId AND i.deleted_at IS NULL",
 		        nativeQuery = true
 		        )
@@ -51,7 +51,7 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpe
 		
 		//Get total amount of Incomes per year
 		@Query(
-		        value = "SELECT COALESCE(SUM(i.amount)) FROM incomes i " +
+		        value = "SELECT COALESCE(SUM(COALESCE(i.amount_primary_currency, i.amount))) FROM incomes i " +
 		                "WHERE YEAR(i.date) = :year AND i.user_id = :userId AND i.deleted_at IS NULL",
 		        nativeQuery = true
 		        )
@@ -60,7 +60,7 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpe
 				
 		//Get total amount of Incomes per day
 		@Query(
-		        value = "SELECT COALESCE(SUM(i.amount)) FROM incomes i " +
+		        value = "SELECT COALESCE(SUM(COALESCE(i.amount_primary_currency, i.amount))) FROM incomes i " +
 		                "WHERE DAY(i.date) = :day AND i.user_id = :userId AND i.deleted_at IS NULL",
 		        nativeQuery = true
 		        )
@@ -68,7 +68,7 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpe
 				
 				
 		@Query(
-		        value = "SELECT COALESCE(SUM(i.amount), 0) FROM incomes i " +
+		        value = "SELECT COALESCE(SSUM(COALESCE(i.amount_primary_currency, i.amount)), 0) FROM incomes i " +
 		                "WHERE i.date BETWEEN :startDate AND :endDate AND i.user_id = :userId AND i.deleted_at IS NULL",
 		        nativeQuery = true
 		        )
