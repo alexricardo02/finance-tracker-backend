@@ -2,13 +2,13 @@ package com.example.service;
 
 import java.time.LocalDate;
 
+
 import java.util.ArrayList;
 import java.util.List;
 
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -18,7 +18,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-import com.example.service.CacheService;
+import io.micrometer.core.instrument.MeterRegistry;
 import com.example.dataTransferObjects.ExpenseRequestDTO;
 import com.example.dataTransferObjects.ExpenseResponseDTO;
 import com.example.dataTransferObjects.PagedResponse;
@@ -51,6 +51,9 @@ public class ExpenseService {
 
 	@Autowired
 	UserRepository userRepository;
+	
+	@Autowired
+	private MeterRegistry meterRegistry;
 
 	private ExpenseResponseDTO convertToResponseDTO(Expense expense) {
 		ExpenseResponseDTO dto = new ExpenseResponseDTO();
@@ -178,7 +181,7 @@ public class ExpenseService {
 
 		Expense savedExpense = expenseRepository.save(expense);
 		cacheService.evictUserFinancialCache(username);
-		cacheService.evictGlobalCache("all_expenses_types", "all");
+		meterRegistry.counter("finance.transactions.created", "type", "expense", "currency", requestDTO.getCurrency()).increment();		cacheService.evictGlobalCache("all_expenses_types", "all");
 		return convertToResponseDTO(savedExpense);
 	}
 

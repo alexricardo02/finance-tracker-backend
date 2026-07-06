@@ -1,6 +1,7 @@
 package com.example.service;
 
 import com.example.dataTransferObjects.UserSettingsDTO;
+
 import com.example.events.PrimaryCurrencyChangedEvent;
 import com.example.models.User;
 import com.example.repository.UserRepository;
@@ -9,7 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.example.config.RabbitMQConfig;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import java.util.Set;
 
 @Service
@@ -19,7 +21,7 @@ public class SettingsService {
     private static final Set<String> SUPPORTED_CURRENCIES = Set.of("USD", "EUR", "GBP", "ARS", "JPY");
 
     @Autowired private UserRepository userRepository;
-    @Autowired private ApplicationEventPublisher eventPublisher;
+    @Autowired private RabbitTemplate rabbitTemplate;
 
     public UserSettingsDTO getSettings(String username) {
         User user = userRepository.findByUsername(username)
@@ -43,7 +45,9 @@ public class SettingsService {
         user.setPrimaryCurrency(newCurrency);
         userRepository.save(user);
 
-        eventPublisher.publishEvent(
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EXCHANGE,
+                RabbitMQConfig.CURRENCY_ROUTING_KEY,
                 new PrimaryCurrencyChangedEvent(user.getUserId(), username, newCurrency));
 
         return new UserSettingsDTO(newCurrency);
