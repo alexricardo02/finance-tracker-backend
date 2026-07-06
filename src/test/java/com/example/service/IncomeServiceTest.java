@@ -33,6 +33,7 @@ class IncomeServiceTest {
     @Mock private IncomeRepository incomeRepository;
     @Mock private UserRepository userRepository;
     @Mock private CacheService cacheService;
+    @Mock private ExchangeRateService exchangeRateService;
 
     @InjectMocks private IncomeService incomeService;
 
@@ -70,6 +71,10 @@ class IncomeServiceTest {
 
         when(categoryRepository.findById(6)).thenReturn(Optional.of(category));
         when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        
+        // FIX: Prevenimos el NullPointerException devolviendo una tasa fija
+        when(exchangeRateService.getConversionRate(any(), any(), any())).thenReturn(1.0);
+        
         when(incomeRepository.save(any(Income.class))).thenReturn(income);
 
         IncomeResponseDTO result = incomeService.saveIncome(dto, "john");
@@ -163,6 +168,10 @@ class IncomeServiceTest {
 
         when(incomeRepository.findById(10)).thenReturn(Optional.of(income));
         when(categoryRepository.findById(6)).thenReturn(Optional.of(category));
+        
+        // FIX: Prevenimos el NullPointerException en la actualización
+        when(exchangeRateService.getConversionRate(any(), any(), any())).thenReturn(1.0);
+        
         when(incomeRepository.save(any(Income.class))).thenReturn(income);
 
         IncomeResponseDTO result = incomeService.updateIncome(10, dto, "john");
