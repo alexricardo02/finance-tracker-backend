@@ -48,6 +48,13 @@ public class User {
 	@Column(name = "role", nullable = false)
 	private Role role = Role.USER;
 	
+	@Column(name = "primary_currency", nullable = false)
+	private String primaryCurrency = "USD";
+	
+	
+	public String getPrimaryCurrency() { return primaryCurrency; }
+	public void setPrimaryCurrency(String primaryCurrency) { this.primaryCurrency = primaryCurrency; }
+	
 
 	public List<Category> getCategories() {
 		return categories;

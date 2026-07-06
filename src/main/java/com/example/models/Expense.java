@@ -24,6 +24,9 @@ public class Expense {
 
 	@Column(name = "amount", nullable = false)
 	private double amount;
+	
+	@Column(name = "amount_primary_currency")
+	private Double amountPrimaryCurrency;
 
 	@Column(name = "currency", nullable = false)
 	private String currency;
@@ -73,6 +76,9 @@ public class Expense {
 		this.description = description;
 		this.paymentMethod = paymentMethod;
 	}
+	
+	public Double getAmountPrimaryCurrency() { return amountPrimaryCurrency; }
+	public void setAmountPrimaryCurrency(Double amountPrimaryCurrency) { this.amountPrimaryCurrency = amountPrimaryCurrency; }
 
 	public Instant getCreatedAt() {
 		return createdAt;

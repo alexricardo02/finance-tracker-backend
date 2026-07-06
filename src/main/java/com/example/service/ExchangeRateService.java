@@ -7,23 +7,74 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.time.LocalDate;
+import java.util.Map;
+
 @Service
 public class ExchangeRateService {
 
     private static final Logger log = LoggerFactory.getLogger(ExchangeRateService.class);
-    private final RestClient restClient = RestClient.create("https://dolarapi.com");
+    private final RestClient dolarApiClient = RestClient.create("https://dolarapi.com");
+    private final RestClient frankfurterClient = RestClient.create("https://api.frankfurter.dev");
 
-    // WHY: cached 1h via RedisConfig defaults to avoid hammering the free public API
     @Cacheable(value = "usd_ars_oficial", key = "'rate'")
     public ExchangeRateResponseDTO getOficialRate() {
         try {
-            return restClient.get()
+            return dolarApiClient.get()
                     .uri("/v1/dolares/oficial")
                     .retrieve()
                     .body(ExchangeRateResponseDTO.class);
         } catch (Exception e) {
             log.error("Failed to fetch USD/ARS official rate", e);
             throw new RuntimeException("Exchange rate service unavailable");
+        }
+    }
+
+    /**
+     * Units of toCurrency per 1 unit of fromCurrency, as of `date`.
+     * WHY: each transaction stores the rate of ITS OWN date so re-converting the
+     * whole history later (e.g. on primary-currency change) stays accurate,
+     * instead of applying today's rate to old transactions.
+     */
+    @Cacheable(value = "fx_rate", key = "#fromCurrency + '_' + #toCurrency + '_' + #date")
+    public double getConversionRate(String fromCurrency, String toCurrency, LocalDate date) {
+        if (fromCurrency == null || toCurrency == null || fromCurrency.equalsIgnoreCase(toCurrency)) {
+            return 1.0;
+        }
+        if ("ARS".equalsIgnoreCase(fromCurrency) || "ARS".equalsIgnoreCase(toCurrency)) {
+            return getRateViaArsBridge(fromCurrency, toCurrency);
+        }
+        return getRateFromFrankfurter(fromCurrency, toCurrency, date);
+    }
+
+    // WHY: DolarAPI only exposes the CURRENT official rate (no historical endpoint),
+    // an accepted limitation for ARS pairs specifically. Every other pair uses
+    // Frankfurter's historical ECB data.
+    private double getRateViaArsBridge(String fromCurrency, String toCurrency) {
+        double arsPerUsd = getOficialRate().getVenta();
+
+        if ("ARS".equalsIgnoreCase(fromCurrency) && "USD".equalsIgnoreCase(toCurrency)) return 1.0 / arsPerUsd;
+        if ("USD".equalsIgnoreCase(fromCurrency) && "ARS".equalsIgnoreCase(toCurrency)) return arsPerUsd;
+
+        if ("ARS".equalsIgnoreCase(fromCurrency)) {
+            double usdToTarget = getRateFromFrankfurter("USD", toCurrency, LocalDate.now());
+            return (1.0 / arsPerUsd) * usdToTarget;
+        } else {
+            double sourceToUsd = getRateFromFrankfurter(fromCurrency, "USD", LocalDate.now());
+            return sourceToUsd * arsPerUsd;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private double getRateFromFrankfurter(String fromCurrency, String toCurrency, LocalDate date) {
+        try {
+            String path = "/v1/" + date + "?base=" + fromCurrency + "&symbols=" + toCurrency;
+            Map<String, Object> response = frankfurterClient.get().uri(path).retrieve().body(Map.class);
+            Map<String, Object> rates = (Map<String, Object>) response.get("rates");
+            return ((Number) rates.get(toCurrency)).doubleValue();
+        } catch (Exception e) {
+            log.error("Failed to fetch FX rate {} -> {} on {}", fromCurrency, toCurrency, date, e);
+            throw new RuntimeException("Exchange rate service unavailable for " + fromCurrency + "->" + toCurrency);
         }
     }
 }
