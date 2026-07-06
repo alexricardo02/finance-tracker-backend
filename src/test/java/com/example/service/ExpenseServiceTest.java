@@ -33,6 +33,7 @@ class ExpenseServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private CategoryRepository categoryRepository;
     @Mock private CacheService cacheService;
+    @Mock private ExchangeRateService exchangeRateService;
 
     @InjectMocks private ExpenseService expenseService;
 
@@ -69,6 +70,10 @@ class ExpenseServiceTest {
         when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
         // WHY: ExpenseService.saveExpense fetches the Category from DB before saving
         when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
+        
+        // FIX: Simulamos la respuesta del servicio de divisas para evitar el NullPointerException
+        when(exchangeRateService.getConversionRate(any(), any(), any())).thenReturn(1.0);
+        
         when(expenseRepository.save(any(Expense.class))).thenReturn(expense);
 
         ExpenseResponseDTO result = expenseService.saveExpense(dto, "john");
@@ -160,6 +165,10 @@ class ExpenseServiceTest {
         when(expenseRepository.findById(20)).thenReturn(Optional.of(expense));
         // WHY: updateExpense also validates/fetches the new Category from DB
         when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
+        
+        // FIX: Simulamos la respuesta de divisas también en la actualización
+        when(exchangeRateService.getConversionRate(any(), any(), any())).thenReturn(1.0);
+        
         when(expenseRepository.save(any(Expense.class))).thenReturn(expense);
 
         ExpenseResponseDTO result = expenseService.updateExpense(20, dto, "john");
