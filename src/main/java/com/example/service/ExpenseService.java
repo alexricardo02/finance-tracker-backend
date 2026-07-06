@@ -3,6 +3,7 @@ package com.example.service;
 import java.time.LocalDate;
 
 
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,7 +33,7 @@ import com.example.repository.UserRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.Predicate;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ExpenseService {
@@ -83,6 +84,7 @@ public class ExpenseService {
 		return dto;
 	}
 
+	@Transactional(readOnly = true)
 	public PagedResponse<ExpenseResponseDTO> getFilteredExpenses(String username, LocalDate startDate,
 			LocalDate endDate, Long categoryId, PaymentMethod method, int page, int size) {
 
