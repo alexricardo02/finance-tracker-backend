@@ -1,13 +1,12 @@
 package com.example.service;
 
 import java.time.LocalDate;
-import com.example.service.CacheService;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -18,12 +17,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.example.dataTransferObjects.ExpenseResponseDTO;
 import com.example.dataTransferObjects.IncomeRequestDTO;
 import com.example.dataTransferObjects.IncomeResponseDTO;
 import com.example.dataTransferObjects.PagedResponse;
 import com.example.models.Category;
-import com.example.models.Expense;
 import com.example.models.Income;
 import com.example.models.PaymentMethod;
 import com.example.models.User;
@@ -52,6 +49,9 @@ public class IncomeService {
 	
 	@Autowired
     private CacheService cacheService;
+	
+	@Autowired
+	private MeterRegistry meterRegistry;
 
 	private IncomeResponseDTO convertToResponseDTO(Income income) {
 		IncomeResponseDTO dto = new IncomeResponseDTO();
@@ -158,6 +158,8 @@ public class IncomeService {
 		Income savedIncome = incomeRepository.save(income);
 		
 		cacheService.evictUserFinancialCache(username);
+		
+		meterRegistry.counter("finance.transactions.created", "type", "income", "currency", requestDTO.getCurrency()).increment();
 		
 		return convertToResponseDTO(savedIncome);
 	}

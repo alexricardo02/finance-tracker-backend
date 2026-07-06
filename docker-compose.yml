@@ -18,7 +18,21 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: finance-rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   redis:
     image: redis:7-alpine
     container_name: finance-redis
@@ -42,11 +56,17 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ""
       JWT_SECRET: local_dev_secret_change_in_production
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
 volumes:
   postgres_data:

@@ -1,6 +1,8 @@
 package com.example.service;
 
 import com.example.dataTransferObjects.ExchangeRateResponseDTO;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
@@ -18,6 +20,8 @@ public class ExchangeRateService {
     private final RestClient frankfurterClient = RestClient.create("https://api.frankfurter.dev");
 
     @Cacheable(value = "usd_ars_oficial", key = "'rate'")
+    @CircuitBreaker(name = "exchangeRate", fallbackMethod = "getOficialRateFallback")
+    @Retry(name = "exchangeRate")
     public ExchangeRateResponseDTO getOficialRate() {
         try {
             return dolarApiClient.get()
@@ -28,6 +32,17 @@ public class ExchangeRateService {
             log.error("Failed to fetch USD/ARS official rate", e);
             throw new RuntimeException("Exchange rate service unavailable");
         }
+    }
+    
+ // Fallback: NO tirar 500. Devuelve el último valor válido o un valor conservador.
+    private ExchangeRateResponseDTO getOficialRateFallback(Throwable t) {
+        log.warn("Circuit breaker OPEN para DolarAPI. Usando fallback. Causa: {}", t.getMessage());
+        ExchangeRateResponseDTO fallback = new ExchangeRateResponseDTO();
+        fallback.setCompra(0.0);
+        fallback.setVenta(0.0);
+        fallback.setCasa("fallback");
+        fallback.setFechaActualizacion("unavailable");
+        return fallback;
     }
 
     /**
@@ -65,8 +80,10 @@ public class ExchangeRateService {
         }
     }
 
+    @CircuitBreaker(name = "exchangeRate", fallbackMethod = "getRateFromFrankfurterFallback")
+    @Retry(name = "exchangeRate")
     @SuppressWarnings("unchecked")
-    private double getRateFromFrankfurter(String fromCurrency, String toCurrency, LocalDate date) {
+    public double getRateFromFrankfurter(String fromCurrency, String toCurrency, LocalDate date) {
         try {
             String path = "/v1/" + date + "?base=" + fromCurrency + "&symbols=" + toCurrency;
             Map<String, Object> response = frankfurterClient.get().uri(path).retrieve().body(Map.class);
@@ -77,4 +94,12 @@ public class ExchangeRateService {
             throw new RuntimeException("Exchange rate service unavailable for " + fromCurrency + "->" + toCurrency);
         }
     }
+    
+	 // Fallback: usa 1.0 (no-op conversion) para NO bloquear el guardado del income/expense.
+	 // El usuario prefiere guardar con una tasa desactualizada a no poder guardar nada.
+	 public double getRateFromFrankfurterFallback(String fromCurrency, String toCurrency, LocalDate date, Throwable t) {
+	     log.warn("Circuit breaker OPEN para Frankfurter ({} -> {}). Fallback = 1.0. Causa: {}",
+	             fromCurrency, toCurrency, t.getMessage());
+	     return 1.0;
+	 }
 }

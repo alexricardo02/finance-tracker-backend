@@ -45,7 +45,8 @@ public class SecurityConfig {
                 "/api/users/logout", "/api/users/logout/"
             ).permitAll()
             .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-            .requestMatchers("/actuator/health").permitAll()
+            .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+            .requestMatchers("/actuator/prometheus").permitAll()
             .requestMatchers("/actuator/**").authenticated()
             .requestMatchers("/api/incomes/**", "/api/expenses/**").authenticated()
             .requestMatchers("/api/settings/**").authenticated()
