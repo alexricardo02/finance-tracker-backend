@@ -47,6 +47,7 @@ public class SecurityConfig {
             .requestMatchers("/actuator/health").permitAll()
             .requestMatchers("/actuator/**").authenticated()
             .requestMatchers("/api/incomes/**", "/api/expenses/**").authenticated()
+            .requestMatchers("/api/settings/**").authenticated()
             .anyRequest().authenticated()
         );
 
