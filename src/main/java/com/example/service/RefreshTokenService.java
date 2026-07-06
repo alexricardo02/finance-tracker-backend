@@ -48,4 +48,16 @@ public class RefreshTokenService {
     public Optional<RefreshToken> findByToken(String token) {
         return refreshTokenRepository.findByToken(token);
     }
+    
+    @Transactional
+    public RefreshToken rotateRefreshToken(RefreshToken oldToken) {
+        oldToken.setToken(UUID.randomUUID().toString());
+        oldToken.setExpiryDate(Instant.now().plusMillis(refreshTokenDurationMs));
+        return refreshTokenRepository.save(oldToken);
+    }
+
+    @Transactional
+    public void deleteByToken(String token) {
+        refreshTokenRepository.deleteByToken(token);
+    }
 }

@@ -26,61 +26,74 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-			throws ServletException, IOException {
+	        throws ServletException, IOException {
 
-		String uri = request.getRequestURI();
-		String method = request.getMethod();
+	    String uri = request.getRequestURI();
+	    String method = request.getMethod();
 
-		Supplier<BucketConfiguration> configSupplier = null;
-		String prefix = "";
-		String rateLimitId = null; // IP para auth endpoints, username para mutaciones autenticadas
+	    Supplier<BucketConfiguration> configSupplier = null;
+	    String prefix = "";
+	    String rateLimitId = null;
 
-		if (method.equals("POST")) {
-			if (uri.equals("/api/users/login")) {
-				configSupplier = getConfigSupplierForLogin();
-				prefix = "login_limit:";
-				rateLimitId = getClientIP(request);
-			} else if (uri.equals("/api/users/register")) {
-				configSupplier = getConfigSupplierForRegister();
-				prefix = "register_limit:";
-				rateLimitId = getClientIP(request);
-			}
-		}
+	    if (method.equals("POST")) {
+	        if (uri.equals("/api/users/login")) {
+	            configSupplier = getConfigSupplierForLogin();
+	            prefix = "login_limit:";
+	            rateLimitId = getClientIP(request);
+	        } else if (uri.equals("/api/users/register")) {
+	            configSupplier = getConfigSupplierForRegister();
+	            prefix = "register_limit:";
+	            rateLimitId = getClientIP(request);
+	        } else if (uri.equals("/api/users/refresh")) {
+	            // NUEVO: sin esto, /refresh podía ser golpeado sin límite
+	            configSupplier = getConfigSupplierForRefresh();
+	            prefix = "refresh_limit:";
+	            rateLimitId = getClientIP(request);
+	        }
+	    }
 
-		// WHY: guard write operations on financial data (POST/PUT/DELETE) per
-		// authenticated user,
-		// independent from the auth-specific limits above.
-		boolean isMutationEndpoint = (uri.startsWith("/api/incomes") || uri.startsWith("/api/expenses"))
-				&& (method.equals("POST") || method.equals("PUT") || method.equals("DELETE"));
+	    boolean isMutationEndpoint = (uri.startsWith("/api/incomes") || uri.startsWith("/api/expenses")
+	            || uri.startsWith("/api/categories") || uri.startsWith("/api/settings")) // categories/settings añadidos
+	            && (method.equals("POST") || method.equals("PUT") || method.equals("DELETE"));
 
-		if (isMutationEndpoint) {
-			String username = getAuthenticatedUsername();
-			if (username != null) {
-				checkAndConsume(response, "mutation_limit:", username, getConfigSupplierForMutations());
-				if (response.isCommitted())
-					return;
-			}
-		}
+	    if (isMutationEndpoint) {
+	        String username = getAuthenticatedUsername();
+	        if (username != null) {
+	            checkAndConsume(response, "mutation_limit:", username, getConfigSupplierForMutations());
+	            if (response.isCommitted())
+	                return;
+	        }
+	    }
 
-		if (configSupplier != null) {
-			checkAndConsume(response, prefix, rateLimitId, configSupplier);
-			if (response.isCommitted())
-				return;
-		}
+	    if (configSupplier != null) {
+	        checkAndConsume(response, prefix, rateLimitId, configSupplier);
+	        if (response.isCommitted())
+	            return;
+	    }
 
-		filterChain.doFilter(request, response);
+	    filterChain.doFilter(request, response);
 	}
 
 	private void checkAndConsume(HttpServletResponse response, String prefix, String id,
-			Supplier<BucketConfiguration> configSupplier) throws IOException {
-		byte[] key = (prefix + id).getBytes();
-		Bucket bucket = proxyManager.builder().build(key, configSupplier);
+	        Supplier<BucketConfiguration> configSupplier) throws IOException {
+	    byte[] key = (prefix + id).getBytes();
+	    Bucket bucket = proxyManager.builder().build(key, configSupplier);
 
-		if (!bucket.tryConsume(1)) {
-			response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-			response.setContentType("application/json");
-			response.getWriter().write("{\"error\": \"Too many requests. Please slow down.\"}");
-		}
+	    var probe = bucket.tryConsumeAndReturnRemaining(1);
+	    if (!probe.isConsumed()) {
+	        long waitSeconds = Math.max(1, probe.getNanosToWaitForRefill() / 1_000_000_000);
+	        response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+	        response.setHeader("Retry-After", String.valueOf(waitSeconds));
+	        response.setContentType("application/json");
+	        response.getWriter().write("{\"error\": \"Too many requests. Please slow down.\", \"retryAfterSeconds\": " + waitSeconds + "}");
+	    }
+	}
+
+	private Supplier<BucketConfiguration> getConfigSupplierForRefresh() {
+	    return () -> {
+	        Bandwidth limit = Bandwidth.builder().capacity(20).refillGreedy(20, Duration.ofMinutes(1)).build();
+	        return BucketConfiguration.builder().addLimit(limit).build();
+	    };
 	}
 
 	private String getAuthenticatedUsername() {
