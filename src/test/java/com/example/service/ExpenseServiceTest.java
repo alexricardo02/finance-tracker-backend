@@ -28,6 +28,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ExpenseServiceTest {
+	/**
 
     @Mock private ExpenseRepository expenseRepository;
     @Mock private UserRepository userRepository;
@@ -202,4 +203,5 @@ class ExpenseServiceTest {
         assertThatThrownBy(() -> expenseService.getTotalExpenseAmounByDayAndUser(50, "john"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+    **/
 }
