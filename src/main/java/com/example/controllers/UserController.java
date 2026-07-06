@@ -55,27 +55,29 @@ public class UserController {
 	}
 	
 	@PostMapping("/refresh")
-    public ResponseEntity<?> refreshToken(@Valid @RequestBody TokenRefreshRequestDTO request) {
-        
-        String requestRefreshToken = request.getRefreshToken();
+	public ResponseEntity<?> refreshToken(@Valid @RequestBody TokenRefreshRequestDTO request) {
+	    String requestRefreshToken = request.getRefreshToken();
 
-        // 1. Buscamos el token en la base de datos
-        RefreshToken tokenDB = refreshTokenService.findByToken(requestRefreshToken)
-            .orElseThrow(() -> new SecurityException("Refresh token no encontrado en la base de datos"));
+	    RefreshToken tokenDB = refreshTokenService.findByToken(requestRefreshToken)
+	        .orElseThrow(() -> new SecurityException("Refresh token no encontrado en la base de datos"));
 
-        // 2. Verificamos que no haya expirado (Si expiró, lanzará un error automáticamente)
-        refreshTokenService.verifyExpiration(tokenDB);
+	    refreshTokenService.verifyExpiration(tokenDB);
 
-        // 3. Si todo está perfecto, generamos un nuevo Access Token de 15 minutos
-        User user = tokenDB.getUser();
-        String newAccessToken = jwtUtil.generateToken(user.getUsername(), user.getRole());
+	    User user = tokenDB.getUser();
+	    String newAccessToken = jwtUtil.generateToken(user.getUsername(), user.getRole());
 
+	    // ROTACIÓN: invalida el refresh token usado y emite uno nuevo
+	    RefreshToken rotated = refreshTokenService.rotateRefreshToken(tokenDB);
 
-        // 4. Se lo devolvemos al usuario
-        LoginResponseDTO response = new LoginResponseDTO(newAccessToken, requestRefreshToken, null);
+	    LoginResponseDTO response = new LoginResponseDTO(newAccessToken, rotated.getToken(), null);
+	    return ResponseEntity.ok(response);
+	}
 
-        return ResponseEntity.ok(response);
-    }
+	@PostMapping("/logout")
+	public ResponseEntity<?> logout(@Valid @RequestBody TokenRefreshRequestDTO request) {
+	    refreshTokenService.deleteByToken(request.getRefreshToken());
+	    return ResponseEntity.noContent().build();
+	}
 	
 	
 }
