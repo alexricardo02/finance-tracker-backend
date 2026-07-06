@@ -18,6 +18,8 @@ public class IncomeResponseDTO {
 	private String categoryName;
 	private Integer userId;
 	private String description;
+	private Double amountPrimaryCurrency;
+	private String primaryCurrency;
 	@NotNull(message = "Payment method is mandatory")
     private PaymentMethod paymentMethod;
 
@@ -42,6 +44,11 @@ public class IncomeResponseDTO {
 		}
 
 	}
+	
+	public Double getAmountPrimaryCurrency() { return amountPrimaryCurrency; }
+	public void setAmountPrimaryCurrency(Double amountPrimaryCurrency) { this.amountPrimaryCurrency = amountPrimaryCurrency; }
+	public String getPrimaryCurrency() { return primaryCurrency; }
+	public void setPrimaryCurrency(String primaryCurrency) { this.primaryCurrency = primaryCurrency; }
 
 	public Integer getCategoryId() {
 		return categoryId;

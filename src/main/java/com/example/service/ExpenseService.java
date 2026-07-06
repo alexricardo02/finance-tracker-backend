@@ -36,6 +36,9 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class ExpenseService {
+	
+	@Autowired
+	private ExchangeRateService exchangeRateService;
 
 	@Autowired
 	private CategoryRepository categoryRepository;
@@ -68,6 +71,11 @@ public class ExpenseService {
 			dto.setUserId(expense.getUser().getUserId());
 		}
 		dto.setPaymentMethod(expense.getPaymentMethod());
+		
+		dto.setAmountPrimaryCurrency(expense.getAmountPrimaryCurrency());
+		if (expense.getUser() != null) {
+		    dto.setPrimaryCurrency(expense.getUser().getPrimaryCurrency());
+		}
 
 		return dto;
 	}
@@ -164,6 +172,9 @@ public class ExpenseService {
 				.orElseThrow(() -> new EntityNotFoundException("User not found"));
 
 		expense.setUser(user);
+		
+		double rate = exchangeRateService.getConversionRate(requestDTO.getCurrency(), user.getPrimaryCurrency(), requestDTO.getDate());
+		expense.setAmountPrimaryCurrency(requestDTO.getAmount() * rate);
 
 		Expense savedExpense = expenseRepository.save(expense);
 		cacheService.evictUserFinancialCache(username);
@@ -222,6 +233,10 @@ public class ExpenseService {
 		existingExpense.setExpenseDescription(requestDTO.getDescription());
 		existingExpense.setCategory(category);
 		existingExpense.setPaymentMethod(requestDTO.getPaymentMethod());
+		
+		String primaryCurrency = existingExpense.getUser().getPrimaryCurrency();
+		double rate = exchangeRateService.getConversionRate(requestDTO.getCurrency(), primaryCurrency, requestDTO.getDate());
+		existingExpense.setAmountPrimaryCurrency(requestDTO.getAmount() * rate);
 
 		Expense updatedExpense = expenseRepository.save(existingExpense);
 		cacheService.evictUserFinancialCache(username);

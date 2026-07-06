@@ -19,11 +19,18 @@ public class ExpenseResponseDTO {
 	@NotNull(message = "Payment method is mandatory")
     private PaymentMethod paymentMethod;
 	private Integer userId;
+	private Double amountPrimaryCurrency;
+	private String primaryCurrency;
 
 	public ExpenseResponseDTO() {
 		super();
 	}
 
+	public Double getAmountPrimaryCurrency() { return amountPrimaryCurrency; }
+	public void setAmountPrimaryCurrency(Double amountPrimaryCurrency) { this.amountPrimaryCurrency = amountPrimaryCurrency; }
+	public String getPrimaryCurrency() { return primaryCurrency; }
+	public void setPrimaryCurrency(String primaryCurrency) { this.primaryCurrency = primaryCurrency; }
+	
 	public Integer getCategoryId() {
 		return categoryId;
 	}

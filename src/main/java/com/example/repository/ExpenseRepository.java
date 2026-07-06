@@ -35,7 +35,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>, JpaS
 	List<String> findAllExpenseTypes();
 	
     @Query(
-            value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
+            value = "SELECT COALESCE(SUM(COALESCE(e.amount_primary_currency, e.amount)), 0) FROM expenses e " +
                     "WHERE e.date BETWEEN :startDate AND :endDate AND e.user_id = :userId AND e.deleted_at IS NULL",
             nativeQuery = true
             )
@@ -43,7 +43,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>, JpaS
 	
 	// obtener total de gasto por type
     @Query(
-            value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
+            value = "SELECT COALESCE(SUM(COALESCE(e.amount_primary_currency, e.amount)), 0) FROM expenses e " +
                     "WHERE e.type = :expenseTypeName AND e.user_id = :userId AND e.deleted_at IS NULL",
             nativeQuery = true
             )
@@ -52,7 +52,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>, JpaS
 	
 	//Get total amount of Expenses per month
     @Query(
-            value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
+            value = "SELECT COALESCE(SUM(COALESCE(e.amount_primary_currency, e.amount)), 0) FROM expenses e " +
                     "WHERE MONTH(e.date) = :monthNumber AND e.user_id = :userId AND e.deleted_at IS NULL",
             nativeQuery = true
             )
@@ -60,7 +60,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>, JpaS
 	
 	//Get total amount of Expenses per year
     @Query(
-            value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
+            value = "SELECT COALESCE(SUM(COALESCE(e.amount_primary_currency, e.amount)), 0) FROM expenses e " +
                     "WHERE YEAR(e.date) = :year AND e.user_id = :userId AND e.deleted_at IS NULL",
             nativeQuery = true
             )
@@ -69,7 +69,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>, JpaS
 	
 	//Get total amount of Expenses per day
     @Query(
-            value = "SELECT COALESCE(SUM(e.amount), 0) FROM expenses e " +
+            value = "SELECT COALESCE(SUM(COALESCE(e.amount_primary_currency, e.amount)), 0) FROM expenses e " +
                     "WHERE DAY(e.date) = :day AND e.user_id = :userId AND e.deleted_at IS NULL",
             nativeQuery = true
             )

@@ -37,6 +37,9 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class IncomeService {
+	
+	@Autowired
+	private ExchangeRateService exchangeRateService;
 
 	@Autowired
 	private CategoryRepository categoryRepository;
@@ -69,6 +72,11 @@ public class IncomeService {
 			dto.setUserId(income.getUser().getUserId());
 		}
 		dto.setPaymentMethod(income.getPaymentMethod());
+		
+		dto.setAmountPrimaryCurrency(income.getAmountPrimaryCurrency());
+		if (income.getUser() != null) {
+		    dto.setPrimaryCurrency(income.getUser().getPrimaryCurrency());
+		}
 		
 		return dto;
 	}
@@ -144,6 +152,9 @@ public class IncomeService {
 		System.out.println("LOG: El ID de ese usuario en la DB es: " + user.getUserId());
 
 		income.setUser(user);
+		String primaryCurrency = user.getPrimaryCurrency();
+		double rate = exchangeRateService.getConversionRate(requestDTO.getCurrency(), primaryCurrency, requestDTO.getDate());
+		income.setAmountPrimaryCurrency(requestDTO.getAmount() * rate);
 		Income savedIncome = incomeRepository.save(income);
 		
 		cacheService.evictUserFinancialCache(username);
@@ -216,6 +227,10 @@ public class IncomeService {
 		existingIncome.setCurrency(incomeRequestDTO.getCurrency());
 		existingIncome.setCategory(category);
 		existingIncome.setPaymentMethod(incomeRequestDTO.getPaymentMethod());
+		
+		String primaryCurrency = existingIncome.getUser().getPrimaryCurrency();
+		double rate = exchangeRateService.getConversionRate(incomeRequestDTO.getCurrency(), primaryCurrency, incomeRequestDTO.getDate());
+		existingIncome.setAmountPrimaryCurrency(incomeRequestDTO.getAmount() * rate);
 
 		Income updatedIncome = incomeRepository.save(existingIncome);
 		
