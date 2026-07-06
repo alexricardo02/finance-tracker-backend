@@ -15,6 +15,7 @@ import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtUtil {
@@ -34,7 +35,9 @@ public class JwtUtil {
     
     // GENERAR TOKEN
     public String generateToken(String username, Role role) {
+        String jti = UUID.randomUUID().toString();
         return Jwts.builder()
+                .setId(jti)
                 .setSubject(username)
                 .claim("role", role.name())
                 .setIssuedAt(new Date())
@@ -68,6 +71,20 @@ public class JwtUtil {
     public String extractRole(String token) {
         Object role = getClaims(token).get("role");
         return role != null ? role.toString() : Role.USER.name();
+    }
+    
+
+    public String extractJti(String token) {
+        return getClaims(token).getId();
+    }
+
+    public long getRemainingValiditySeconds(String token) {
+        long diff = getClaims(token).getExpiration().getTime() - System.currentTimeMillis();
+        return Math.max(diff / 1000, 0);
+    }
+
+    public long getExpirationSeconds() {
+        return expirationTime / 1000;
     }
 
 }
