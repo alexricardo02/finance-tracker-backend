@@ -42,7 +42,7 @@ public interface UserRepository extends JpaRepository<User, Integer>{
     // Actualizar contraseña
     @Modifying 
     @Query(
-	        value = "UPDATE users u SET u.password_hash = :newPassword WHERE u.user_id = :userId",
+	        value = "UPDATE users SET password_hash = :newPassword WHERE user_id = :userId",
 	        nativeQuery = true // ¡Indica que es SQL!
 	    )
     void updatePassword(@Param("userId") Integer userId, @Param("newPassword") String newPassword);
@@ -50,7 +50,7 @@ public interface UserRepository extends JpaRepository<User, Integer>{
     // Actualizar email
     @Modifying 
     @Query(
-	        value = "UPDATE users u SET u.email = :newEmail WHERE u.user_id = :userId",
+	        value = "UPDATE users SET email = :newEmail WHERE user_id = :userId",
 	        nativeQuery = true // ¡Indica que es SQL!
 	    )
     void updateEmail(@Param("userId") Integer userId, @Param("newEmail") String newEmail);

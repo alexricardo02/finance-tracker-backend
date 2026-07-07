@@ -68,7 +68,7 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpe
 				
 				
 		@Query(
-		        value = "SELECT COALESCE(SSUM(COALESCE(i.amount_primary_currency, i.amount)), 0) FROM incomes i " +
+		        value = "SELECT COALESCE(SUM(COALESCE(i.amount_primary_currency, i.amount)), 0) FROM incomes i " +
 		                "WHERE i.date BETWEEN :startDate AND :endDate AND i.user_id = :userId AND i.deleted_at IS NULL",
 		        nativeQuery = true
 		        )
