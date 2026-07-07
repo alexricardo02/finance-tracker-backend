@@ -187,11 +187,6 @@ public class ExpenseService {
 		return convertToResponseDTO(savedExpense);
 	}
 
-	@Cacheable(value = "all_expenses_types", key = "'all'")
-	public List<String> getAllExpenseTypes() {
-		return expenseRepository.findAllExpenseTypes();
-	}
-
 	public ExpenseResponseDTO getExpenseById(int id, String username) {
 		Expense expense = expenseRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Expense not found with ID: " + id));
@@ -247,17 +242,6 @@ public class ExpenseService {
 		cacheService.evictUserFinancialCache(username);
 		cacheService.evictGlobalCache("all_expenses_types", "all");
 		return convertToResponseDTO(updatedExpense);
-	}
-
-	public List<ExpenseResponseDTO> getExpenseByTypeAndUser(String expenseType, String username) {
-
-		if (expenseType == null) {
-			throw new IllegalArgumentException("ExpenseType no puede ser nulo");
-		}
-		List<Expense> expenses = expenseRepository.findByExpenseTypeNameAndUser(expenseType,
-				getUserIdByUsername(username));
-
-		return expenses.stream().map(this::convertToResponseDTO).collect(Collectors.toList());
 	}
 
 	@Cacheable(value = "expenses_type", key = "#username + '_'+ #expenseType")

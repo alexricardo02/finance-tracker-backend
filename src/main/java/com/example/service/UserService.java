@@ -111,7 +111,8 @@ public class UserService {
             .orElseThrow(() -> new EntityNotFoundException("User not found"));
         
         // Update username if provided and unique
-        if (updateDTO != null) {
+        if (updateDTO != null && updateDTO.getUsername() != null 
+                && !updateDTO.getUsername().isBlank()) {
             if (!user.getUsername().equals(updateDTO.getUsername())) {
                 if (userRepository.existsByUsername(updateDTO.getUsername())) {
                     throw new IllegalArgumentException("Username already taken");
