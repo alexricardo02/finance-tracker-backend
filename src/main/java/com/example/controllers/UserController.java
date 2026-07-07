@@ -1,6 +1,10 @@
 package com.example.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import com.example.dataTransferObjects.ForgotPasswordRequestDTO;
+import com.example.dataTransferObjects.ResetPasswordRequestDTO;
+import com.example.service.PasswordResetService;
+import java.util.Map;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -26,11 +30,24 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/users")
 public class UserController {
 
+	@Autowired private PasswordResetService passwordResetService;
     @Autowired private UserService userService;
     @Autowired private JwtUtil jwtUtil;
     @Autowired private RefreshTokenService refreshTokenService;
     @Autowired private CookieUtil cookieUtil;
     @Autowired private TokenBlacklistService tokenBlacklistService;
+    
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequestDTO dto) {
+        passwordResetService.requestPasswordReset(dto.getEmail());
+        return ResponseEntity.ok(Map.of("message", "If that email exists, a reset link has been sent."));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequestDTO dto) {
+        passwordResetService.resetPassword(dto.getToken(), dto.getNewPassword());
+        return ResponseEntity.ok(Map.of("message", "Password updated successfully."));
+    }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO loginDTO) {

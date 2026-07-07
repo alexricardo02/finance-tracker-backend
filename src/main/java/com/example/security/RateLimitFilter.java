@@ -23,6 +23,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
 	@Autowired
 	private ProxyManager<byte[]> proxyManager;
+	
+	private Supplier<BucketConfiguration> getConfigSupplierForForgotPassword() {
+	    return () -> {
+	        Bandwidth limit = Bandwidth.builder().capacity(3).refillGreedy(3, Duration.ofHours(1)).build();
+	        return BucketConfiguration.builder().addLimit(limit).build();
+	    };
+	}
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -49,7 +56,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
 	            configSupplier = getConfigSupplierForRefresh();
 	            prefix = "refresh_limit:";
 	            rateLimitId = getClientIP(request);
+	        } else if (uri.equals("/api/users/forgot-password")) {
+	            configSupplier = getConfigSupplierForForgotPassword();
+	            prefix = "forgot_password_limit:";
+	            rateLimitId = getClientIP(request);
 	        }
+	        
 	    }
 
 	    boolean isMutationEndpoint = (uri.startsWith("/api/incomes") || uri.startsWith("/api/expenses")

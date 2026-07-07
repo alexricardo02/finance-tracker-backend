@@ -42,7 +42,9 @@ public class SecurityConfig {
                 "/api/users/login", "/api/users/login/",
                 "/api/users/register", "/api/users/register/",
                 "/api/users/refresh", "/api/users/refresh/",
-                "/api/users/logout", "/api/users/logout/"
+                "/api/users/logout", "/api/users/logout/",
+                "/api/users/forgot-password", "/api/users/forgot-password/",
+                "/api/users/reset-password", "/api/users/reset-password/"
             ).permitAll()
             .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
             .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
