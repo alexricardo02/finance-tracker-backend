@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(exclude = { SecurityAutoConfiguration.class }, 
@@ -23,6 +24,7 @@ scanBasePackages = {
 @EnableCaching
 @EnableJpaAuditing
 @EnableScheduling   
+@EnableAsync
 public class Application {
 	public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
