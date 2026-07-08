@@ -249,8 +249,3 @@ The API will be available at `http://localhost:8080`.
 
 **Alex Brinckmann**
 
----
-
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
