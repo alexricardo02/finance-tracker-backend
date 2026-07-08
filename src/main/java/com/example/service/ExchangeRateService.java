@@ -57,7 +57,7 @@ public class ExchangeRateService {
             return 1.0;
         }
         if ("ARS".equalsIgnoreCase(fromCurrency) || "ARS".equalsIgnoreCase(toCurrency)) {
-            return getRateViaArsBridge(fromCurrency, toCurrency);
+            return getRateViaArsBridge(fromCurrency, toCurrency, date);
         }
         return getRateFromFrankfurter(fromCurrency, toCurrency, date);
     }
@@ -65,17 +65,16 @@ public class ExchangeRateService {
     // WHY: DolarAPI only exposes the CURRENT official rate (no historical endpoint),
     // an accepted limitation for ARS pairs specifically. Every other pair uses
     // Frankfurter's historical ECB data.
-    private double getRateViaArsBridge(String fromCurrency, String toCurrency) {
+    private double getRateViaArsBridge(String fromCurrency, String toCurrency, LocalDate date) {
         double arsPerUsd = getOficialRate().getVenta();
-
         if ("ARS".equalsIgnoreCase(fromCurrency) && "USD".equalsIgnoreCase(toCurrency)) return 1.0 / arsPerUsd;
         if ("USD".equalsIgnoreCase(fromCurrency) && "ARS".equalsIgnoreCase(toCurrency)) return arsPerUsd;
 
         if ("ARS".equalsIgnoreCase(fromCurrency)) {
-            double usdToTarget = getRateFromFrankfurter("USD", toCurrency, LocalDate.now());
+            double usdToTarget = getRateFromFrankfurter("USD", toCurrency, date);
             return (1.0 / arsPerUsd) * usdToTarget;
         } else {
-            double sourceToUsd = getRateFromFrankfurter(fromCurrency, "USD", LocalDate.now());
+            double sourceToUsd = getRateFromFrankfurter(fromCurrency, "USD", date);
             return sourceToUsd * arsPerUsd;
         }
     }
