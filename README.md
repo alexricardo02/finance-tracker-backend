@@ -1,8 +1,28 @@
-# 📊 Personal Finance Tracker API (Spring Boot)
+# 📊 Finance Tracker — Backend API
 
-A robust, high-performance RESTful API built with Spring Boot for tracking personal expenses and incomes. This backend system is designed with a strong focus on **scalability, security, and performance optimization**, featuring JWT-based authentication, an isolated multi-tenant architecture (user data privacy), and high-speed data retrieval using Redis caching.
+![Java](https://img.shields.io/badge/Java_17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot_3-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![CI](https://img.shields.io/github/actions/workflow/status/alexricardo02/finance-tracker-backend/maven.yml?style=for-the-badge&label=CI&logo=githubactions&logoColor=white)
 
-🌍 **Live Frontend (Next.js):** [https://expenses-incomes-frontend.vercel.app/]
+A production-grade RESTful API for personal finance tracking, built with a focus on **scalability, security, and performance**. Goes beyond a simple CRUD — implements real-world backend engineering concepts including JWT authentication, Redis caching with per-user isolation, rate limiting, pagination, and a global exception handling strategy.
+
+🌍 **Live Frontend:** [expenses-incomes-frontend.vercel.app](https://expenses-incomes-frontend.vercel.app)
+
+---
+
+## 📌 Table of Contents
+
+- [Features](#-features)
+- [System Design](#-system-design)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [API Reference](#-api-reference)
+- [Setup & Installation](#-setup--installation)
+- [Environment Variables](#-environment-variables)
+- [Roadmap](#-roadmap)
 
 ---
 
