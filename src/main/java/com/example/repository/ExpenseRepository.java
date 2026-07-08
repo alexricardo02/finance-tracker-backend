@@ -53,7 +53,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>, JpaS
 	//Get total amount of Expenses per month
     @Query(
             value = "SELECT COALESCE(SUM(COALESCE(e.amount_primary_currency, e.amount)), 0) FROM expenses e " +
-                    "WHERE MONTH(e.date) = :monthNumber AND e.user_id = :userId AND e.deleted_at IS NULL",
+                    "WHERE EXTRACT(MONTH FROM e.date) = :monthNumber AND e.user_id = :userId AND e.deleted_at IS NULL",
             nativeQuery = true
             )
 	Double getTotalExpenseAmountByMonthAndUser(@Param("monthNumber") Integer monthNumber, @Param("userId") Integer userId);
@@ -61,7 +61,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>, JpaS
 	//Get total amount of Expenses per year
     @Query(
             value = "SELECT COALESCE(SUM(COALESCE(e.amount_primary_currency, e.amount)), 0) FROM expenses e " +
-                    "WHERE YEAR(e.date) = :year AND e.user_id = :userId AND e.deleted_at IS NULL",
+                    "WHERE EXTRACT(YEAR FROM e.date) = :year AND e.user_id = :userId AND e.deleted_at IS NULL",
             nativeQuery = true
             )
 	Double getTotalExpenseAmountByYearAndUser(@Param("year") Integer year, @Param("userId") Integer userId);
@@ -70,7 +70,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>, JpaS
 	//Get total amount of Expenses per day
     @Query(
             value = "SELECT COALESCE(SUM(COALESCE(e.amount_primary_currency, e.amount)), 0) FROM expenses e " +
-                    "WHERE DAY(e.date) = :day AND e.user_id = :userId AND e.deleted_at IS NULL",
+                    "WHERE EXTRACT(DAY FROM e.date) = :day AND e.user_id = :userId AND e.deleted_at IS NULL",
             nativeQuery = true
             )
 	Double getTotalExpenseAmountByDayAndUser(@Param("day") Integer day, @Param("userId") Integer userId);

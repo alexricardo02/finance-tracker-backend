@@ -43,16 +43,16 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpe
 		
 		//Get total amount of Incomes per month
 		@Query(
-		        value = "SELECT COALESCE(SUM(COALESCE(i.amount_primary_currency, i.amount))) FROM incomes i " +
-		                "WHERE MONTH(i.date) = :monthNumber AND i.user_id = :userId AND i.deleted_at IS NULL",
+		        value = "SELECT COALESCE(SUM(COALESCE(i.amount_primary_currency, i.amount)), 0) FROM incomes i " +
+		                "WHERE EXTRACT(MONTH FROM e.date) = :monthNumber AND i.user_id = :userId AND i.deleted_at IS NULL",
 		        nativeQuery = true
 		        )
 		Double getTotalIncomeAmountByMonthAndUser(@Param("monthNumber") Integer monthNumber, @Param("userId") Integer userId);
 		
 		//Get total amount of Incomes per year
 		@Query(
-		        value = "SELECT COALESCE(SUM(COALESCE(i.amount_primary_currency, i.amount))) FROM incomes i " +
-		                "WHERE YEAR(i.date) = :year AND i.user_id = :userId AND i.deleted_at IS NULL",
+		        value = "SELECT COALESCE(SUM(COALESCE(i.amount_primary_currency, i.amount)), 0) FROM incomes i " +
+		                "WHERE EXTRACT(YEAR FROM e.date) = :year AND i.user_id = :userId AND i.deleted_at IS NULL",
 		        nativeQuery = true
 		        )
 		Double getTotalIncomeAmountByYearAndUser(@Param("year") Integer year, @Param("userId") Integer userId);
@@ -60,8 +60,8 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpe
 				
 		//Get total amount of Incomes per day
 		@Query(
-		        value = "SELECT COALESCE(SUM(COALESCE(i.amount_primary_currency, i.amount))) FROM incomes i " +
-		                "WHERE DAY(i.date) = :day AND i.user_id = :userId AND i.deleted_at IS NULL",
+		        value = "SELECT COALESCE(SUM(COALESCE(i.amount_primary_currency, i.amount)), 0) FROM incomes i " +
+		                "WHERE EXTRACT(DAY FROM e.date) = :day AND i.user_id = :userId AND i.deleted_at IS NULL",
 		        nativeQuery = true
 		        )
 		Double getTotalIncomeAmountByDayAndUser(@Param("day") Integer day, @Param("userId") Integer userId);
