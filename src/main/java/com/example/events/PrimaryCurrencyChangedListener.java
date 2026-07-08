@@ -33,10 +33,15 @@ public class PrimaryCurrencyChangedListener {
     @RabbitListener(queues = RabbitMQConfig.CURRENCY_QUEUE)
     @Transactional
     public void onPrimaryCurrencyChanged(PrimaryCurrencyChangedEvent event) {
+    	recalculate(event);
+    }
+    
+    @Transactional
+    public void recalculate(PrimaryCurrencyChangedEvent event) {
         String newCurrency = event.getNewCurrency();
         log.info("Recalculating amounts to {} for user {}", newCurrency, event.getUsername());
 
-        incomeRepository.findByUserUserId(event.getUserId(), Pageable.unpaged())
+        incomeRepository.findByUserUserId(event.getUserId(), Pageable.unpaged() )
                 .forEach(income -> {
                     double rate = exchangeRateService.getConversionRate(
                             income.getCurrency(), newCurrency, income.getDate());
@@ -54,5 +59,5 @@ public class PrimaryCurrencyChangedListener {
 
         cacheService.evictUserFinancialCache(event.getUsername());
         log.info("Recalculation finished for user {}", event.getUsername());
-    }
-}
+     }
+ }

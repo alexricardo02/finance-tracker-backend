@@ -69,15 +69,6 @@ public class UserService {
         
         User savedUser = userRepository.save(user);
         
-        java.util.List<Category> defaultCategories = java.util.Arrays.asList(
-                new Category("Salary", "income", savedUser),
-                new Category("Food", "expense", savedUser),
-                new Category("Rent", "expense", savedUser),
-                new Category("Transport", "expense", savedUser),
-                new Category("Entertainment", "expense", savedUser)
-            );
-        categoryRepository.saveAll(defaultCategories);
-        
         return convertToProfileDTO(savedUser);
         
     }
