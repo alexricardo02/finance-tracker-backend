@@ -15,6 +15,7 @@ public class CategorySeeder implements CommandLineRunner {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    
     @Override
     public void run(String... args) throws Exception {
         // Verificamos si ya existen categorías globales (user_id IS NULL)
