@@ -2,6 +2,7 @@ package com.example.service;
 
 import com.example.dataTransferObjects.UserSettingsDTO;
 
+import com.example.events.PrimaryCurrencyChangedListener;
 import com.example.events.PrimaryCurrencyChangedEvent;
 import com.example.models.User;
 import com.example.repository.UserRepository;
@@ -22,6 +23,8 @@ public class SettingsService {
 
     @Autowired private UserRepository userRepository;
     @Autowired private RabbitTemplate rabbitTemplate;
+    @Autowired private PrimaryCurrencyChangedListener currencyRecalculationHandler;
+
 
     public UserSettingsDTO getSettings(String username) {
         User user = userRepository.findByUsername(username)
@@ -44,11 +47,14 @@ public class SettingsService {
 
         user.setPrimaryCurrency(newCurrency);
         userRepository.save(user);
+        
+        PrimaryCurrencyChangedEvent event = new PrimaryCurrencyChangedEvent(user.getUserId(), username, newCurrency);
+        currencyRecalculationHandler.recalculate(event);
 
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.EXCHANGE,
                 RabbitMQConfig.CURRENCY_ROUTING_KEY,
-                new PrimaryCurrencyChangedEvent(user.getUserId(), username, newCurrency));
+                event);
 
         return new UserSettingsDTO(newCurrency);
     }
