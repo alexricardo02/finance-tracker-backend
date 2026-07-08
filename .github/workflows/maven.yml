@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [ "master" ]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -32,14 +39,31 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set up JDK 17
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
         cache: maven
+
+    - name: Secret Scan (Gitleaks)
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: License Check (Anti-GPL)
+      run: |
+        mvn org.codehaus.mojo:license-maven-plugin:2.4.0:aggregate-add-third-party -Dlicense.excludedScopes=test -q
+        if grep -Eqi "GPL|AGPL" target/generated-sources/license/THIRD-PARTY.txt; then
+          echo "GPL/AGPL licensed dependency detected:"
+          grep -Ei "GPL|AGPL" target/generated-sources/license/THIRD-PARTY.txt
+          exit 1
+        fi
+        echo "No GPL/AGPL dependencies detected."
 
     - name: Build and Test with Maven
       env:
@@ -51,3 +75,18 @@ jobs:
         REDIS_PORT: 6379
         REDIS_PASSWORD: ""
       run: mvn clean verify
+
+  codeql:
+      name: Static Application Security Testing (CodeQL)
+      runs-on: ubuntu-latest
+      permissions:
+        security-events: write
+        contents: read
+      steps:
+        - uses: actions/checkout@v4
+        - uses: github/codeql-action/init@v3
+          with:
+            languages: java
+        - name: Build for CodeQL
+          run: mvn -B clean compile -DskipTests
+        - uses: github/codeql-action/analyze@v3
