@@ -6,146 +6,110 @@ A robust, high-performance RESTful API built with Spring Boot for tracking perso
 
 ---
 
-## 🚀 Key Features
+## Table of Contents
+ 
+- [Features](#features)
+- [System Design](#system-design)
+- [Tech Stack](#tech-stack)
+- [Setup & Installation]
+- [Roadmap](#roadmap)
 
-* **Secure Authentication:** JWT (JSON Web Token) implementation for stateless, secure user sessions and route protection.
-* **Complete Financial CRUD:** Create, Read, Update, and Delete operations for both Incomes and Expenses.
-* **Advanced Reporting & Analytics:** Native SQL queries optimized to fetch total aggregations by specific days, months, years, date ranges, and transaction types.
-* **High-Performance Caching:** Redis integration to cache heavy database aggregations, reducing database load and dropping response times to milliseconds.
-* **Strict Data Isolation:** Every query and cache key is scoped by `user_id` to ensure absolute data privacy between users.
-* **Optimized Database Schema:** B-Tree indexing on highly queried columns (Dates, Types, and User IDs) to maintain fast lookup speeds as the database grows.
+--- 
 
----
+## Features
+ 
+- **JWT authentication** with short-lived access tokens and rotating refresh tokens, delivered as httpOnly cookies
+- **Per-user data isolation** — every query and cache key is scoped by user
+- **Categories** — user-defined and default income/expense categories, replacing free-text types
+- **Multi-currency support** — every transaction stores its original currency and is converted to the user's primary currency at the exchange rate of its own date; changing the primary currency triggers an asynchronous recalculation of full history via RabbitMQ
+- **Redis caching** — heavy aggregations cached and evicted on mutation, isolated per user
+- **Rate limiting** — token bucket (Bucket4j) on login, registration, refresh, password reset, and all write endpoints
+- **Idempotency keys** — safe retries on income/expense creation without duplicating records
+- **Soft deletes** with audit fields (created/updated/deleted timestamps and actor)
+- **Transaction exports** to CSV, Excel, and PDF with filtering by date range, category, and payment method
+- **Password reset** via signed, time-limited tokens, delivered through the Resend email API
+- **Global exception handling** — consistent JSON error responses, no stack traces leaked to clients
+- **Circuit breakers and retries** (Resilience4j) around external exchange-rate providers, with safe fallbacks
+- **Native SQL aggregations** for totals by day/month/year/date range, computed at the database layer
 
-## 🛠️ Tech Stack & Architecture
-
-* **Framework:** Java 17, Spring Boot, Spring Web
-* **Persistence:** Spring Data JPA, Hibernate
-* **Database:** Serverless PostgreSQL, hosted on Neon.tech
-* **Caching Layer:** Serverless Redis, hosted on Upstash
-* **DevOps / Cloud:** Dockerized deployment on Render, CI/CD pipelines via GitHub Actions.
-
-### 🏗️ System Design Highlights
-
-1. **Caching Strategy (Read-Heavy Optimization):**
-   Heavy aggregations (e.g., "Total Income for the last 6 months") are cached in Redis. Cache keys are uniquely identified by `#username + '_' + #parameter` to prevent cross-user data leakage.
-2. **Cache Eviction (Data Consistency):**
-   A strict `@CacheEvict` policy is applied to all mutating methods (`POST`, `PUT`, `DELETE`). Any change in a user's financial records immediately invalidates the stale cache, ensuring the dashboard always displays real-time data.
-3. **Native SQL & COALESCE:**
-   Instead of loading thousands of Java objects into memory to calculate totals, the application leverages Native SQL queries with `COALESCE(SUM(amount), 0)` to perform calculations directly at the database layer.
-
----
-
-## 🗄️ Database Schema Overview
-
-The system operates on three main entities:
-
-* **Users:** Stores authentication credentials, hashed passwords, and creation dates.
-* **Incomes:** Records money coming in. Belongs to a User. Contains amount, currency, date, type, and description.
-* **Expenses:** Records money going out. Belongs to a User. Contains amount, currency, date, type, and description.
-
-*(A One-to-Many relationship exists between User -> Incomes and User -> Expenses, utilizing Lazy Fetching for memory efficiency).*
-
----
-
-## 📡 API Endpoints Reference
-
-### 🔐 Authentication (`/api/users`)
-| Method | Endpoint | Description | Auth Required |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/users/register` | Register a new user | No |
-| `POST` | `/api/users/login` | Authenticate and receive JWT | No |
-
-### 💸 Incomes (`/api/incomes`)
-| Method | Endpoint | Description | Auth Required |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/incomes` | Create a new income record | Yes (JWT) |
-| `GET` | `/api/incomes` | Get all incomes for current user | Yes (JWT) |
-| `GET` | `/api/incomes/{id}` | Get specific income by ID | Yes (JWT) |
-| `PUT` | `/api/incomes/{id}` | Update an existing income | Yes (JWT) |
-| `DELETE`| `/api/incomes/{id} | Delete an income | Yes (JWT) |
-| `GET` | `/api/incomes/by-type` | Get incomes filtered by type | Yes (JWT) |
-| `GET` | `/api/incomes/total-month` | Get aggregated total by month | Yes (JWT) |
-
-### 🛒 Expenses (`/api/expenses`)
-| Method | Endpoint | Description | Auth Required |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/expenses` | Create a new expense record | Yes (JWT) |
-| `GET` | `/api/expenses` | Get all expenses for current user | Yes (JWT) |
-| `GET` | `/api/expenses/{id}` | Get specific expense by ID | Yes (JWT) |
-| `PUT` | `/api/expenses/{id}` | Update an existing expense | Yes (JWT) |
-| `DELETE`| `/api/expenses/{id}` | Delete an expense | Yes (JWT) |
-
-*(Note: The API also includes multiple endpoints for fetching totals by Year, Last 7 Days, Last 3 Months, etc.)*
-
----
-
-## ⚙️ Setup & Installation
-
+## System Design
+ 
+**Caching.** Heavy read operations (monthly totals, date-range aggregations, category breakdowns) are cached in Redis with per-user key isolation. Any mutation for that user evicts only that user's cache entries via a non-blocking `SCAN`, never a global flush.
+ 
+**Currency conversion.** Each income/expense stores both its original amount/currency and its converted amount in the user's primary currency, using the FX rate of its own transaction date. When a user changes their primary currency, the update publishes an event to RabbitMQ; a background listener recalculates the full transaction history using each transaction's original date, so past totals stay historically accurate instead of being skewed by today's rate.
+ 
+**Idempotency.** Write endpoints accept an `Idempotency-Key` header. A unique DB constraint reserves the key atomically, so concurrent duplicate requests (e.g. a retried network call) return the original response instead of creating a duplicate record.
+ 
+**Exception handling.** A single `@ControllerAdvice` converts every exception into a standardized error response with status, message, and timestamp.
+ 
+## Tech Stack
+ 
+| Layer | Technology |
+|---|---|
+| Framework | Java 17, Spring Boot 3 |
+| Persistence | Spring Data JPA, Hibernate |
+| Database | PostgreSQL |
+| Cache | Redis |
+| Messaging | RabbitMQ |
+| Auth | JWT (jjwt), Spring Security |
+| Rate limiting | Bucket4j |
+| Resilience | Resilience4j (circuit breaker, retry) |
+| Email | Resend (HTTP API) |
+| Exports | Apache POI (Excel), Apache PDFBox (PDF) |
+| Metrics | Micrometer + Prometheus |
+| Validation | Jakarta Bean Validation |
+| DevOps | Docker, Docker Compose |
+| CI/CD | GitHub Actions (build, tests, license check, dependency vulnerability scan, secret scan, CodeQL) |
+| Deployment | Render |
+ 
+--- 
+ 
+## Setup & Installation
+ 
 ### Prerequisites
-* Java 17 or higher
-* Maven 3.6+
-* PostgreSQL installed and running
-* Docker Desktop (for Redis)
-
-### 1. Start Infrastructure (Database & Cache)
-This project uses Docker Compose to manage its dependencies. To spin up PostgreSQL and Redis, simply run:
+- Java 17+
+- Maven 3.6+
+- Docker Desktop
+### 1. Clone the repository
+```bash
+git clone https://github.com/alexricardo02/finance-tracker-backend.git
+cd finance-tracker-backend
+```
+ 
+### 2. Start infrastructure
 ```bash
 docker-compose up -d
 ```
-
-### 2. Configure Database and Application Properties
-Create an application.properties (or .yml) file in src/main/resources and configure your environment variables:
+This starts PostgreSQL, Redis, and RabbitMQ locally.
+ 
+### 3. Configure the application
+Copy `src/main/resources/application.properties.example` (or create `application-local.properties`) and set your database, Redis, RabbitMQ, JWT secret, and Resend API key. See `docker-compose.yml` for the local defaults each service expects.
+ 
+### 4. Run
 ```bash
-# Server configuration
-server.port=8080
-
-# PostgreSQL Configuration
-spring.datasource.url=jdbc:postgresql://localhost:5432/finance_db
-spring.datasource.username=your_db_username
-spring.datasource.password=your_db_password
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-
-# Redis Configuration
-spring.data.redis.host=localhost
-spring.data.redis.port=6379
-spring.cache.type=redis
-
-# JWT Secret Key (Replace with a strong secret in production)
-jwt.secret=your_super_secret_key_here
-```
-
-### 3. Build and Run
-Clone the repository and build the project using Maven:
-```bash
-git clone [https://github.com/yourusername/finance-tracker-backend.git](https://github.com/yourusername/finance-tracker-backend.git)
-cd finance-tracker-backend
-mvn clean install
 mvn spring-boot:run
 ```
-
----
-
-## ⚙️ Core Optimizations
-
-3. **Native SQL & COALESCE**
-Instead of loading thousands of Java objects into memory to calculate totals, the application leverages Native SQL queries with COALESCE(SUM(amount), 0) to perform calculations directly at the database layer.
-
----
-
-## 🔒 Security Workflow
-* **1.** The client sends a POST request to /api/users/login with credentials.
-* **2.** The server verifies the credentials and returns a signed JWT.
-* **3.** For subsequent requests, the client must include this token in the HTTP Header:
-```HTTP
-Authorization: Bearer <your_jwt_token>
+The API is available at `http://localhost:8080`.
+ 
+### 5. Run tests
+```bash
+mvn clean verify
 ```
-* **4.** The JwtRequestFilter intercepts incoming requests, validates the token signature/expiration, and extracts the username to establish the SecurityContext.
+ 
+## Roadmap
+ 
+- [x] JWT authentication with refresh tokens
+- [x] Redis caching with per-user isolation
+- [x] Rate limiting (Bucket4j)
+- [x] Idempotency keys
+- [x] Multi-currency support with async recalculation
+- [x] Transaction exports (CSV, Excel, PDF)
+- [x] Transactional email via HTTP API (Resend)
+- [x] CI/CD with license, vulnerability, and secret scanning
+- [ ] Role-Based Access Control (RBAC)
+- [ ] Swagger / OpenAPI documentation
+- [ ] Structured logging with correlation IDs
 
----
-
-## 🗺️ Roadmap / Future Improvements
-* **[ ]** Rate Limiting (Bucket4j): Implement Token Bucket algorithm to protect the /login and POST endpoints against Brute Force and DDoS attacks.
-* **[ ]** Pagination & Sorting: Implement Spring Data Pageable for /api/expenses and /api/incomes to handle massive datasets gracefully.
-* **[ ]** Global Exception Handler: Implement @ControllerAdvice to standardize error response payloads (e.g., 404 Not Found, 400 Bad Request) across the entire application.
+## Author
+ 
+**Alex Brinckmann**
