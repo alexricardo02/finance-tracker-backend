@@ -1,7 +1,7 @@
 package com.example.repository;
 
 import java.time.LocalDate;
-
+import org.springframework.data.jpa.repository.Modifying;
 
 import java.util.List;
 
@@ -75,6 +75,8 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpe
 		Double getTotalIncomeAmountBetweenAndUser(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, @Param("userId") Integer userId);
 
 		
-
+		@Modifying
+		@Query(value = "DELETE FROM incomes WHERE user_id = :userId", nativeQuery = true)
+		void hardDeleteAllByUserId(@Param("userId") Integer userId);
 
 }

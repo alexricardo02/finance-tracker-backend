@@ -1,6 +1,7 @@
 package com.example.repository;
 
 import java.time.LocalDate;
+import org.springframework.data.jpa.repository.Modifying;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -76,4 +77,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>, JpaS
 	Double getTotalExpenseAmountByDayAndUser(@Param("day") Integer day, @Param("userId") Integer userId);
 
 
+    @Modifying
+    @Query(value = "DELETE FROM expenses WHERE user_id = :userId", nativeQuery = true)
+    void hardDeleteAllByUserId(@Param("userId") Integer userId);
 }
