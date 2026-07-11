@@ -1,6 +1,8 @@
 package com.example.service;
 
 import com.example.dataTransferObjects.ExchangeRateResponseDTO;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import org.slf4j.Logger;
@@ -18,6 +20,10 @@ public class ExchangeRateService {
     private static final Logger log = LoggerFactory.getLogger(ExchangeRateService.class);
     private final RestClient dolarApiClient = RestClient.create("https://dolarapi.com");
     private final RestClient frankfurterClient = RestClient.create("https://api.frankfurter.dev");
+    
+    @Autowired
+    @Lazy
+    private ExchangeRateService self;
 
     @Cacheable(value = "usd_ars_oficial", key = "'rate'")
     @CircuitBreaker(name = "exchangeRate", fallbackMethod = "getOficialRateFallback")
@@ -59,22 +65,22 @@ public class ExchangeRateService {
         if ("ARS".equalsIgnoreCase(fromCurrency) || "ARS".equalsIgnoreCase(toCurrency)) {
             return getRateViaArsBridge(fromCurrency, toCurrency, date);
         }
-        return getRateFromFrankfurter(fromCurrency, toCurrency, date);
+        return self.getRateFromFrankfurter(fromCurrency, toCurrency, date);
     }
 
     // WHY: DolarAPI only exposes the CURRENT official rate (no historical endpoint),
     // an accepted limitation for ARS pairs specifically. Every other pair uses
     // Frankfurter's historical ECB data.
     private double getRateViaArsBridge(String fromCurrency, String toCurrency, LocalDate date) {
-        double arsPerUsd = getOficialRate().getVenta();
+        double arsPerUsd = self.getOficialRate().getVenta();
         if ("ARS".equalsIgnoreCase(fromCurrency) && "USD".equalsIgnoreCase(toCurrency)) return 1.0 / arsPerUsd;
         if ("USD".equalsIgnoreCase(fromCurrency) && "ARS".equalsIgnoreCase(toCurrency)) return arsPerUsd;
 
         if ("ARS".equalsIgnoreCase(fromCurrency)) {
-            double usdToTarget = getRateFromFrankfurter("USD", toCurrency, date);
+            double usdToTarget = self.getRateFromFrankfurter("USD", toCurrency, date);
             return (1.0 / arsPerUsd) * usdToTarget;
         } else {
-            double sourceToUsd = getRateFromFrankfurter(fromCurrency, "USD", date);
+            double sourceToUsd = self.getRateFromFrankfurter(fromCurrency, "USD", date);
             return sourceToUsd * arsPerUsd;
         }
     }
