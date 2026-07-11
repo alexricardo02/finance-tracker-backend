@@ -1,9 +1,13 @@
 package com.example.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import com.example.dataTransferObjects.DeleteAccountRequestDTO;
+
 import com.example.dataTransferObjects.ForgotPasswordRequestDTO;
 import com.example.dataTransferObjects.ResetPasswordRequestDTO;
 import com.example.service.PasswordResetService;
+
+import java.security.Principal;
 import java.util.Map;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -122,5 +126,25 @@ public class UserController {
             if (name.equals(c.getName())) return c.getValue();
         }
         return null;
+    }
+    
+    @DeleteMapping("/me")
+    public ResponseEntity<?> deleteAccount(Principal principal,
+                                            @Valid @RequestBody DeleteAccountRequestDTO dto,
+                                            HttpServletRequest request) {
+        userService.deleteAccount(principal.getName(), dto.getPassword());
+
+        String accessToken = extractCookie(request, "auth_token");
+        if (accessToken != null) {
+            try {
+                tokenBlacklistService.blacklist(jwtUtil.extractJti(accessToken),
+                        jwtUtil.getRemainingValiditySeconds(accessToken));
+            } catch (Exception ignored) {}
+        }
+
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, cookieUtil.clearCookie("auth_token").toString())
+                .header(HttpHeaders.SET_COOKIE, cookieUtil.clearCookie("refresh_token").toString())
+                .build();
     }
 }

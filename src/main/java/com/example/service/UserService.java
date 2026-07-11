@@ -18,6 +18,10 @@ import com.example.models.Income;
 import com.example.models.Role;
 import com.example.models.User;
 import com.example.repository.CategoryRepository;
+import com.example.repository.ExpenseRepository;
+import com.example.repository.IncomeRepository;
+import com.example.repository.PasswordResetTokenRepository;
+import com.example.repository.RefreshTokenRepository;
 import com.example.repository.UserRepository;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -26,6 +30,11 @@ import com.example.models.Category;
 
 @Service
 public class UserService {
+	
+	@Autowired private ExpenseRepository expenseRepository;
+	@Autowired private IncomeRepository incomeRepository;
+	@Autowired private RefreshTokenRepository refreshTokenRepository;
+	@Autowired private PasswordResetTokenRepository passwordResetTokenRepository;
 	
 	@Autowired
 	private CategoryRepository categoryRepository;
@@ -175,5 +184,25 @@ public class UserService {
 
 	    // 3. Si la clave es correcta, convertimos el User a UserProfileDTO y lo devolvemos
 	    return convertToProfileDTO(user);
+	}
+	
+	@Transactional
+	public void deleteAccount(String username, String rawPassword) {
+	    User user = userRepository.findByUsername(username)
+	        .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+	    if (!passwordEncoder.matches(rawPassword, user.getPassword_hash())) {
+	        throw new SecurityException("Incorrect password");
+	    }
+
+	    Integer userId = user.getUserId();
+
+	    expenseRepository.hardDeleteAllByUserId(userId);
+	    incomeRepository.hardDeleteAllByUserId(userId);
+	    categoryRepository.deleteByUserUserId(userId);
+	    refreshTokenRepository.deleteByUser(user);
+	    passwordResetTokenRepository.deleteByUser(user);
+
+	    userRepository.delete(user);
 	}
 }
