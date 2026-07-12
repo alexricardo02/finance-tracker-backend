@@ -65,7 +65,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
 	    }
 
 	    boolean isMutationEndpoint = (uri.startsWith("/api/incomes") || uri.startsWith("/api/expenses")
-	            || uri.startsWith("/api/categories") || uri.startsWith("/api/settings")) // categories/settings añadidos
+	            || uri.startsWith("/api/categories") || uri.startsWith("/api/settings")
+	            || uri.startsWith("/api/imports"))
 	            && (method.equals("POST") || method.equals("PUT") || method.equals("DELETE"));
 
 	    if (isMutationEndpoint) {
