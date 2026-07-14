@@ -1,6 +1,8 @@
 package com.example.models;
 
 import java.util.Date;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 import java.util.List;
 
 import jakarta.persistence.CascadeType;
@@ -16,6 +18,8 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name="users")
+@SQLDelete(sql = "UPDATE users SET is_active = false WHERE user_id = ?")
+@Where(clause = "is_active = true")
 public class User {
 	
 	@Id
@@ -34,6 +38,9 @@ public class User {
 	
 	@Column(name="creation_date", nullable = false)
     private Date creationDate;
+	
+	@Column(name="is_active", nullable = false)
+    private boolean isActive = true;
 	
 	@OneToMany(mappedBy="user")
 	private List<Expense> expenses;
@@ -55,6 +62,13 @@ public class User {
 	public String getPrimaryCurrency() { return primaryCurrency; }
 	public void setPrimaryCurrency(String primaryCurrency) { this.primaryCurrency = primaryCurrency; }
 	
+	public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean active) {
+        isActive = active;
+    }
 
 	public List<Category> getCategories() {
 		return categories;

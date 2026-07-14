@@ -63,6 +63,7 @@ public class UserController {
         ResponseCookie accessCookie = cookieUtil.buildAccessTokenCookie(token, jwtUtil.getExpirationSeconds());
         ResponseCookie refreshCookie = cookieUtil.buildRefreshTokenCookie(refreshToken.getToken(), 7 * 24 * 60 * 60);
 
+        
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
