@@ -100,7 +100,12 @@ public class UserService {
 	
 	@Transactional
 	public void deleteUser(Integer id) {
-		userRepository.deleteById(id);
+		User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        refreshTokenRepository.deleteByUser(user);
+
+        userRepository.delete(user);
 	}
 	
 	
@@ -171,18 +176,14 @@ public class UserService {
 	
 	
 	public UserProfileDTO login(LoginRequestDTO loginDTO) {
-	    // 1. Buscamos al usuario por su username
-	    // El repositorio devuelve un Optional<User>, por eso usamos .orElseThrow
+
 	    User user = userRepository.findByUsername(loginDTO.getUsername())
 	            .orElseThrow(() -> new SecurityException("Usuario o contraseña incorrectos"));
 
-	    // 2. Comparamos la contraseña en texto plano con el hash de la base de datos
-	    // Usamos el passwordEncoder que ya tienes inyectado
 	    if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword_hash())) {
 	        throw new SecurityException("Usuario o contraseña incorrectos");
 	    }
 
-	    // 3. Si la clave es correcta, convertimos el User a UserProfileDTO y lo devolvemos
 	    return convertToProfileDTO(user);
 	}
 	
