@@ -29,7 +29,10 @@ public class IdempotencyFilter extends OncePerRequestFilter {
         boolean appliesToPath = request.getRequestURI().startsWith("/api/incomes")
                 || request.getRequestURI().startsWith("/api/expenses");
 
-        if (!request.getMethod().equals("POST") || !appliesToPath) {
+        String method = request.getMethod();
+        boolean isProtectedMethod = method.equals("POST") || method.equals("PUT") || method.equals("DELETE");
+
+        if (!isProtectedMethod || !appliesToPath) {
             chain.doFilter(request, response);
             return;
         }
