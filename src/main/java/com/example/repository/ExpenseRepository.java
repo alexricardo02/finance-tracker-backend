@@ -17,6 +17,7 @@ import com.example.models.Expense;
 @Repository
 public interface ExpenseRepository extends JpaRepository<Expense, Integer>, JpaSpecificationExecutor<Expense>{
 	
+	boolean existsByCategory_CategoryId(Integer categoryId);
 	
 	// NEW METHOD: return a page
     Page<Expense> findByUserUserId(int userId, Pageable pageable);

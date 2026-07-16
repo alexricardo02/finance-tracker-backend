@@ -1,6 +1,8 @@
 package com.example.security;
 
 import jakarta.servlet.FilterChain;
+import com.example.repository.UserRepository;
+import com.example.models.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,6 +28,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
     @Autowired
     private TokenBlacklistService tokenBlacklistService;
+    
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -47,10 +52,23 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 logger.error("No se pudo extraer el username del token");
             }
         }
+        
+        
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             String jti = jwtUtil.extractJti(jwt);
             if (jwtUtil.isTokenValid(jwt) && !tokenBlacklistService.isBlacklisted(jti)) {
+            	
+            	boolean isActive = userRepository.findByUsername(username)
+                        .map(User::isActive)
+                        .orElse(false);
+            	
+            	if (!isActive) {
+                    // Si el usuario no existe (o is_active=false por el @Where), bloqueamos la petición
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token inválido o cuenta desactivada");
+                    return;
+                }
+            	
                 String role = jwtUtil.extractRole(jwt);
                 List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
                 UsernamePasswordAuthenticationToken authToken =

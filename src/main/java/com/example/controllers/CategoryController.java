@@ -4,6 +4,8 @@ import com.example.dataTransferObjects.CategoryDTO;
 import com.example.models.Category;
 import com.example.models.User;
 import com.example.repository.CategoryRepository;
+import com.example.repository.ExpenseRepository;
+import com.example.repository.IncomeRepository;
 import com.example.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,6 +23,12 @@ public class CategoryController {
 
     @Autowired
     private CategoryRepository categoryRepository;
+    
+    @Autowired
+    private ExpenseRepository expenseRepository;
+    
+    @Autowired
+    private IncomeRepository incomeRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -57,15 +65,17 @@ public class CategoryController {
                 .body(new CategoryDTO(savedCategory.getCategoryId(), savedCategory.getName(), savedCategory.getType()));
     }
     
-    // 3. Eliminar uma categoria
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCategory(@PathVariable Integer id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
                 
-        // Proteção: Garantir que o utilizador só apaga as suas próprias categorias
         if (!category.getUser().getUsername().equals(getAuthenticatedUsername())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not authorized");
+        }
+        
+        if (expenseRepository.existsByCategory_CategoryId(id) || incomeRepository.existsByCategory_CategoryId(id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot delete category in use by existing transactions");
         }
         
         categoryRepository.delete(category);

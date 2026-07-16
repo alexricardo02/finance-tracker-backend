@@ -19,6 +19,8 @@ import com.example.models.Income;
 @Repository
 public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpecificationExecutor<Income>{
 	
+		boolean existsByCategory_CategoryId(Integer categoryId);
+	
 		Page<Income> findByUserUserId(int userId, Pageable pageable);
 	
 		// Obtener todas las incomes de un tipo
