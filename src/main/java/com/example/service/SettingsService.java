@@ -4,7 +4,9 @@ import com.example.dataTransferObjects.UserSettingsDTO;
 
 import com.example.events.PrimaryCurrencyChangedListener;
 import com.example.events.PrimaryCurrencyChangedEvent;
+import com.example.models.OutboxEvent;
 import com.example.models.User;
+import com.example.repository.OutboxEventRepository;
 import com.example.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,7 @@ public class SettingsService {
 
     @Autowired private UserRepository userRepository;
     @Autowired private RabbitTemplate rabbitTemplate;
+    @Autowired private OutboxEventRepository outboxEventRepository;
     @Autowired private PrimaryCurrencyChangedListener currencyRecalculationHandler;
 
 
@@ -50,12 +53,13 @@ public class SettingsService {
         
         PrimaryCurrencyChangedEvent event = new PrimaryCurrencyChangedEvent(user.getUserId(), username, newCurrency);
         currencyRecalculationHandler.recalculate(event);
+        
+        String jsonPayload = String.format("{\"userId\": %d, \"username\": \"%s\", \"newCurrency\": \"%s\"}", 
+                user.getUserId(), username, newCurrency);
+		OutboxEvent outboxEvent = new OutboxEvent("PRIMARY_CURRENCY_CHANGED", jsonPayload);
+		outboxEventRepository.save(outboxEvent);
+		
+		return new UserSettingsDTO(newCurrency);
 
-        rabbitTemplate.convertAndSend(
-                RabbitMQConfig.EXCHANGE,
-                RabbitMQConfig.CURRENCY_ROUTING_KEY,
-                event);
-
-        return new UserSettingsDTO(newCurrency);
     }
 }
