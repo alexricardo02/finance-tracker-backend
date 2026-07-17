@@ -1,0 +1,921 @@
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 17.10 (9f6157c)
+-- Dumped by pg_dump version 17.4
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Name: neon_auth; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA neon_auth;
+
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: account; Type: TABLE; Schema: neon_auth; Owner: -
+--
+
+CREATE TABLE neon_auth.account (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    "accountId" text NOT NULL,
+    "providerId" text NOT NULL,
+    "userId" uuid NOT NULL,
+    "accessToken" text,
+    "refreshToken" text,
+    "idToken" text,
+    "accessTokenExpiresAt" timestamp with time zone,
+    "refreshTokenExpiresAt" timestamp with time zone,
+    scope text,
+    password text,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL
+);
+
+
+--
+-- Name: invitation; Type: TABLE; Schema: neon_auth; Owner: -
+--
+
+CREATE TABLE neon_auth.invitation (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    "organizationId" uuid NOT NULL,
+    email text NOT NULL,
+    role text,
+    status text NOT NULL,
+    "expiresAt" timestamp with time zone NOT NULL,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "inviterId" uuid NOT NULL
+);
+
+
+--
+-- Name: jwks; Type: TABLE; Schema: neon_auth; Owner: -
+--
+
+CREATE TABLE neon_auth.jwks (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    "publicKey" text NOT NULL,
+    "privateKey" text NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL,
+    "expiresAt" timestamp with time zone
+);
+
+
+--
+-- Name: member; Type: TABLE; Schema: neon_auth; Owner: -
+--
+
+CREATE TABLE neon_auth.member (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    "organizationId" uuid NOT NULL,
+    "userId" uuid NOT NULL,
+    role text NOT NULL,
+    "createdAt" timestamp with time zone NOT NULL
+);
+
+
+--
+-- Name: organization; Type: TABLE; Schema: neon_auth; Owner: -
+--
+
+CREATE TABLE neon_auth.organization (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    slug text NOT NULL,
+    logo text,
+    "createdAt" timestamp with time zone NOT NULL,
+    metadata text
+);
+
+
+--
+-- Name: project_config; Type: TABLE; Schema: neon_auth; Owner: -
+--
+
+CREATE TABLE neon_auth.project_config (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    endpoint_id text NOT NULL,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    trusted_origins jsonb NOT NULL,
+    social_providers jsonb NOT NULL,
+    email_provider jsonb,
+    email_and_password jsonb,
+    allow_localhost boolean NOT NULL,
+    plugin_configs jsonb,
+    webhook_config jsonb
+);
+
+
+--
+-- Name: session; Type: TABLE; Schema: neon_auth; Owner: -
+--
+
+CREATE TABLE neon_auth.session (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    "expiresAt" timestamp with time zone NOT NULL,
+    token text NOT NULL,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "ipAddress" text,
+    "userAgent" text,
+    "userId" uuid NOT NULL,
+    "impersonatedBy" text,
+    "activeOrganizationId" text
+);
+
+
+--
+-- Name: user; Type: TABLE; Schema: neon_auth; Owner: -
+--
+
+CREATE TABLE neon_auth."user" (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    email text NOT NULL,
+    "emailVerified" boolean NOT NULL,
+    image text,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    role text,
+    banned boolean,
+    "banReason" text,
+    "banExpires" timestamp with time zone
+);
+
+
+--
+-- Name: verification; Type: TABLE; Schema: neon_auth; Owner: -
+--
+
+CREATE TABLE neon_auth.verification (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    identifier text NOT NULL,
+    value text NOT NULL,
+    "expiresAt" timestamp with time zone NOT NULL,
+    "createdAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+--
+-- Name: categories; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.categories (
+    category_id integer NOT NULL,
+    name character varying(100) NOT NULL,
+    type character varying(50) NOT NULL,
+    user_id integer
+);
+
+
+--
+-- Name: categories_category_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.categories ALTER COLUMN category_id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.categories_category_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: expenses; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.expenses (
+    id integer NOT NULL,
+    amount double precision NOT NULL,
+    currency character varying(255) NOT NULL,
+    date date NOT NULL,
+    expense_description text,
+    type character varying(100),
+    user_id integer NOT NULL,
+    category_id integer,
+    payment_method character varying(255),
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    deleted_at timestamp without time zone,
+    deleted_by character varying(255),
+    amount_primary_currency double precision,
+    CONSTRAINT expenses_payment_method_check CHECK (((payment_method)::text = ANY ((ARRAY['CASH'::character varying, 'CREDIT_CARD'::character varying, 'DEBIT_CARD'::character varying, 'BANK_TRANSFER'::character varying, 'OTHER'::character varying])::text[])))
+);
+
+
+--
+-- Name: expenses_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.expenses ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.expenses_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: flyway_schema_history; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.flyway_schema_history (
+    installed_rank integer NOT NULL,
+    version character varying(50),
+    description character varying(200) NOT NULL,
+    type character varying(20) NOT NULL,
+    script character varying(1000) NOT NULL,
+    checksum integer,
+    installed_by character varying(100) NOT NULL,
+    installed_on timestamp without time zone DEFAULT now() NOT NULL,
+    execution_time integer NOT NULL,
+    success boolean NOT NULL
+);
+
+
+--
+-- Name: idempotency_keys; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.idempotency_keys (
+    id integer NOT NULL,
+    idempotency_key character varying(255) NOT NULL,
+    user_id integer NOT NULL,
+    response_status integer NOT NULL,
+    response_body text NOT NULL,
+    created_at timestamp without time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: idempotency_keys_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.idempotency_keys_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: idempotency_keys_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.idempotency_keys_id_seq OWNED BY public.idempotency_keys.id;
+
+
+--
+-- Name: incomes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.incomes (
+    income_id integer NOT NULL,
+    amount double precision NOT NULL,
+    currency character varying(255) NOT NULL,
+    date date NOT NULL,
+    description character varying(255),
+    type character varying(255),
+    user_id integer NOT NULL,
+    category_id integer,
+    payment_method character varying(255),
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    deleted_at timestamp without time zone,
+    deleted_by character varying(255),
+    amount_primary_currency double precision,
+    CONSTRAINT incomes_payment_method_check CHECK (((payment_method)::text = ANY ((ARRAY['CASH'::character varying, 'CREDIT_CARD'::character varying, 'DEBIT_CARD'::character varying, 'BANK_TRANSFER'::character varying, 'OTHER'::character varying])::text[])))
+);
+
+
+--
+-- Name: incomes_income_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.incomes ALTER COLUMN income_id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.incomes_income_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: password_reset_tokens; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.password_reset_tokens (
+    id integer NOT NULL,
+    expiry_date timestamp(6) with time zone NOT NULL,
+    token character varying(255) NOT NULL,
+    user_id integer
+);
+
+
+--
+-- Name: password_reset_tokens_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.password_reset_tokens ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.password_reset_tokens_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: playing_with_neon; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.playing_with_neon (
+    id integer NOT NULL,
+    name text NOT NULL,
+    value real
+);
+
+
+--
+-- Name: playing_with_neon_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.playing_with_neon_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: playing_with_neon_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.playing_with_neon_id_seq OWNED BY public.playing_with_neon.id;
+
+
+--
+-- Name: refresh_tokens; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.refresh_tokens (
+    id integer NOT NULL,
+    expiry_date timestamp(6) with time zone NOT NULL,
+    token character varying(255) NOT NULL,
+    user_id integer
+);
+
+
+--
+-- Name: refresh_tokens_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.refresh_tokens ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.refresh_tokens_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: users; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.users (
+    user_id integer NOT NULL,
+    creation_date timestamp(6) without time zone NOT NULL,
+    email character varying(255) NOT NULL,
+    password_hash character varying(255) NOT NULL,
+    username character varying(255) NOT NULL,
+    role character varying(255) DEFAULT 'USER'::character varying NOT NULL,
+    primary_currency character varying(255) DEFAULT 'USD'::character varying NOT NULL,
+    is_active boolean DEFAULT true NOT NULL
+);
+
+
+--
+-- Name: users_user_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.users ALTER COLUMN user_id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.users_user_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: idempotency_keys id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.idempotency_keys ALTER COLUMN id SET DEFAULT nextval('public.idempotency_keys_id_seq'::regclass);
+
+
+--
+-- Name: playing_with_neon id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.playing_with_neon ALTER COLUMN id SET DEFAULT nextval('public.playing_with_neon_id_seq'::regclass);
+
+
+--
+-- Name: account account_pkey; Type: CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth.account
+    ADD CONSTRAINT account_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: invitation invitation_pkey; Type: CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth.invitation
+    ADD CONSTRAINT invitation_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: jwks jwks_pkey; Type: CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth.jwks
+    ADD CONSTRAINT jwks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: member member_pkey; Type: CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth.member
+    ADD CONSTRAINT member_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: organization organization_pkey; Type: CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth.organization
+    ADD CONSTRAINT organization_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: organization organization_slug_key; Type: CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth.organization
+    ADD CONSTRAINT organization_slug_key UNIQUE (slug);
+
+
+--
+-- Name: project_config project_config_endpoint_id_key; Type: CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth.project_config
+    ADD CONSTRAINT project_config_endpoint_id_key UNIQUE (endpoint_id);
+
+
+--
+-- Name: project_config project_config_pkey; Type: CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth.project_config
+    ADD CONSTRAINT project_config_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: session session_pkey; Type: CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth.session
+    ADD CONSTRAINT session_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: session session_token_key; Type: CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth.session
+    ADD CONSTRAINT session_token_key UNIQUE (token);
+
+
+--
+-- Name: user user_email_key; Type: CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth."user"
+    ADD CONSTRAINT user_email_key UNIQUE (email);
+
+
+--
+-- Name: user user_pkey; Type: CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth."user"
+    ADD CONSTRAINT user_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: verification verification_pkey; Type: CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth.verification
+    ADD CONSTRAINT verification_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: categories categories_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.categories
+    ADD CONSTRAINT categories_pkey PRIMARY KEY (category_id);
+
+
+--
+-- Name: expenses expenses_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.expenses
+    ADD CONSTRAINT expenses_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: flyway_schema_history flyway_schema_history_pk; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.flyway_schema_history
+    ADD CONSTRAINT flyway_schema_history_pk PRIMARY KEY (installed_rank);
+
+
+--
+-- Name: idempotency_keys idempotency_keys_idempotency_key_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.idempotency_keys
+    ADD CONSTRAINT idempotency_keys_idempotency_key_key UNIQUE (idempotency_key);
+
+
+--
+-- Name: idempotency_keys idempotency_keys_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.idempotency_keys
+    ADD CONSTRAINT idempotency_keys_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: incomes incomes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.incomes
+    ADD CONSTRAINT incomes_pkey PRIMARY KEY (income_id);
+
+
+--
+-- Name: password_reset_tokens password_reset_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.password_reset_tokens
+    ADD CONSTRAINT password_reset_tokens_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: playing_with_neon playing_with_neon_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.playing_with_neon
+    ADD CONSTRAINT playing_with_neon_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: refresh_tokens refresh_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.refresh_tokens
+    ADD CONSTRAINT refresh_tokens_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: users uk6dotkott2kjsp8vw4d0m25fb7; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT uk6dotkott2kjsp8vw4d0m25fb7 UNIQUE (email);
+
+
+--
+-- Name: password_reset_tokens uk71lqwbwtklmljk3qlsugr1mig; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.password_reset_tokens
+    ADD CONSTRAINT uk71lqwbwtklmljk3qlsugr1mig UNIQUE (token);
+
+
+--
+-- Name: refresh_tokens uk7tdcd6ab5wsgoudnvj7xf1b7l; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.refresh_tokens
+    ADD CONSTRAINT uk7tdcd6ab5wsgoudnvj7xf1b7l UNIQUE (user_id);
+
+
+--
+-- Name: refresh_tokens ukghpmfn23vmxfu3spu3lfg4r2d; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.refresh_tokens
+    ADD CONSTRAINT ukghpmfn23vmxfu3spu3lfg4r2d UNIQUE (token);
+
+
+--
+-- Name: users ukr43af9ap4edm43mmtq01oddj6; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT ukr43af9ap4edm43mmtq01oddj6 UNIQUE (username);
+
+
+--
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (user_id);
+
+
+--
+-- Name: account_userId_idx; Type: INDEX; Schema: neon_auth; Owner: -
+--
+
+CREATE INDEX "account_userId_idx" ON neon_auth.account USING btree ("userId");
+
+
+--
+-- Name: invitation_email_idx; Type: INDEX; Schema: neon_auth; Owner: -
+--
+
+CREATE INDEX invitation_email_idx ON neon_auth.invitation USING btree (email);
+
+
+--
+-- Name: invitation_organizationId_idx; Type: INDEX; Schema: neon_auth; Owner: -
+--
+
+CREATE INDEX "invitation_organizationId_idx" ON neon_auth.invitation USING btree ("organizationId");
+
+
+--
+-- Name: member_organizationId_idx; Type: INDEX; Schema: neon_auth; Owner: -
+--
+
+CREATE INDEX "member_organizationId_idx" ON neon_auth.member USING btree ("organizationId");
+
+
+--
+-- Name: member_userId_idx; Type: INDEX; Schema: neon_auth; Owner: -
+--
+
+CREATE INDEX "member_userId_idx" ON neon_auth.member USING btree ("userId");
+
+
+--
+-- Name: organization_slug_uidx; Type: INDEX; Schema: neon_auth; Owner: -
+--
+
+CREATE UNIQUE INDEX organization_slug_uidx ON neon_auth.organization USING btree (slug);
+
+
+--
+-- Name: session_userId_idx; Type: INDEX; Schema: neon_auth; Owner: -
+--
+
+CREATE INDEX "session_userId_idx" ON neon_auth.session USING btree ("userId");
+
+
+--
+-- Name: verification_identifier_idx; Type: INDEX; Schema: neon_auth; Owner: -
+--
+
+CREATE INDEX verification_identifier_idx ON neon_auth.verification USING btree (identifier);
+
+
+--
+-- Name: flyway_schema_history_s_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX flyway_schema_history_s_idx ON public.flyway_schema_history USING btree (success);
+
+
+--
+-- Name: idx_category_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_category_type ON public.categories USING btree (type);
+
+
+--
+-- Name: idx_category_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_category_user ON public.categories USING btree (user_id);
+
+
+--
+-- Name: idx_expense_category; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_expense_category ON public.expenses USING btree (category_id);
+
+
+--
+-- Name: idx_expense_date; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_expense_date ON public.expenses USING btree (date);
+
+
+--
+-- Name: idx_expense_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_expense_type ON public.expenses USING btree (type);
+
+
+--
+-- Name: idx_expense_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_expense_user ON public.expenses USING btree (user_id);
+
+
+--
+-- Name: idx_income_category; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_income_category ON public.incomes USING btree (category_id);
+
+
+--
+-- Name: idx_income_date; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_income_date ON public.incomes USING btree (date);
+
+
+--
+-- Name: idx_income_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_income_type ON public.incomes USING btree (type);
+
+
+--
+-- Name: idx_income_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_income_user ON public.incomes USING btree (user_id);
+
+
+--
+-- Name: account account_userId_fkey; Type: FK CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth.account
+    ADD CONSTRAINT "account_userId_fkey" FOREIGN KEY ("userId") REFERENCES neon_auth."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: invitation invitation_inviterId_fkey; Type: FK CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth.invitation
+    ADD CONSTRAINT "invitation_inviterId_fkey" FOREIGN KEY ("inviterId") REFERENCES neon_auth."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: invitation invitation_organizationId_fkey; Type: FK CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth.invitation
+    ADD CONSTRAINT "invitation_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES neon_auth.organization(id) ON DELETE CASCADE;
+
+
+--
+-- Name: member member_organizationId_fkey; Type: FK CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth.member
+    ADD CONSTRAINT "member_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES neon_auth.organization(id) ON DELETE CASCADE;
+
+
+--
+-- Name: member member_userId_fkey; Type: FK CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth.member
+    ADD CONSTRAINT "member_userId_fkey" FOREIGN KEY ("userId") REFERENCES neon_auth."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: session session_userId_fkey; Type: FK CONSTRAINT; Schema: neon_auth; Owner: -
+--
+
+ALTER TABLE ONLY neon_auth.session
+    ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES neon_auth."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: refresh_tokens fk1lih5y2npsf8u5o3vhdb9y0os; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.refresh_tokens
+    ADD CONSTRAINT fk1lih5y2npsf8u5o3vhdb9y0os FOREIGN KEY (user_id) REFERENCES public.users(user_id);
+
+
+--
+-- Name: incomes fkfq6qeso6vbt9wu7dyhnx8tpu9; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.incomes
+    ADD CONSTRAINT fkfq6qeso6vbt9wu7dyhnx8tpu9 FOREIGN KEY (user_id) REFERENCES public.users(user_id);
+
+
+--
+-- Name: categories fkghuylkwuedgl2qahxjt8g41kb; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.categories
+    ADD CONSTRAINT fkghuylkwuedgl2qahxjt8g41kb FOREIGN KEY (user_id) REFERENCES public.users(user_id);
+
+
+--
+-- Name: expenses fkhpk0n2cbnfiuu5nrgl0ika3hq; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.expenses
+    ADD CONSTRAINT fkhpk0n2cbnfiuu5nrgl0ika3hq FOREIGN KEY (user_id) REFERENCES public.users(user_id);
+
+
+--
+-- Name: expenses fkjao23ohq935a4qrorwwsen0lr; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.expenses
+    ADD CONSTRAINT fkjao23ohq935a4qrorwwsen0lr FOREIGN KEY (category_id) REFERENCES public.categories(category_id);
+
+
+--
+-- Name: password_reset_tokens fkk3ndxg5xp6v7wd4gjyusp15gq; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.password_reset_tokens
+    ADD CONSTRAINT fkk3ndxg5xp6v7wd4gjyusp15gq FOREIGN KEY (user_id) REFERENCES public.users(user_id);
+
+
+--
+-- Name: incomes fkskwyj1a9qn7lq84a9n7kxhlbj; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.incomes
+    ADD CONSTRAINT fkskwyj1a9qn7lq84a9n7kxhlbj FOREIGN KEY (category_id) REFERENCES public.categories(category_id);
+
+
+--
+-- PostgreSQL database dump complete
+--
