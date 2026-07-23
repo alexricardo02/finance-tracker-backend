@@ -24,16 +24,6 @@ A production-grade RESTful API for personal finance tracking, built with a focus
 - [Environment Variables](#-environment-variables)
 - [Roadmap](#-roadmap)
 
----
-
-## Table of Contents
- 
-- [Features](#features)
-- [System Design](#system-design)
-- [Tech Stack](#tech-stack)
-- [Setup & Installation]
-- [Roadmap](#roadmap)
-
 --- 
 
 ## Features
