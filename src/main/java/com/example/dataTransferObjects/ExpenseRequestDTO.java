@@ -11,16 +11,16 @@ import jakarta.validation.constraints.Positive;
 
 public class ExpenseRequestDTO {
 
-	@Positive(message = "El monto debe ser positivo")
+	@Positive(message = "The amount must be positive")
 	private Double amount;
 
 	private String currency;
 
-	@NotNull(message = "La fecha es obligatoria")
+	@NotNull(message = "The date is required")
 	@JsonFormat(pattern = "yyyy-MM-dd")
 	private LocalDate date;
 
-	@NotNull(message = "La categoría es obligatoria")
+	@NotNull(message = "The category is required")
 	private Integer categoryId; // Added field
 
 	private String description;
@@ -36,9 +36,9 @@ public class ExpenseRequestDTO {
 		super();
 	}
 
-	public ExpenseRequestDTO(@Positive(message = "El monto debe ser positivo") Double amount,
-			@NotBlank(message = "La fecha es obligatoria") LocalDate date,
-			@NotNull(message = "La categoría es obligatoria") Integer categoryId,
+	public ExpenseRequestDTO(@Positive(message = "The amount must be positive") Double amount,
+			@NotBlank(message = "The date is required") LocalDate date,
+			@NotNull(message = "The category is required") Integer categoryId,
 			@Positive(message = "User ID must be positive") Integer userId) {
 		super();
 		this.amount = amount;

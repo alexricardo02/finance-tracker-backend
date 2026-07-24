@@ -18,7 +18,7 @@ public class LoginRequestDTO {
         this.password = password;
     }
 
-    // Getters y Setters
+    // Getters and setters
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
 

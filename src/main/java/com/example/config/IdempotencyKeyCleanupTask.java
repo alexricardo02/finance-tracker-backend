@@ -15,7 +15,7 @@ public class IdempotencyKeyCleanupTask {
     @Autowired
     private IdempotencyKeyRepository idempotencyKeyRepository;
 
-    // Corre cada hora, borra keys con más de 48h (ya no hay riesgo de replay/duplicado)
+    // Runs every hour and deletes keys older than 48 hours (no replay/duplicate risk remains)
     @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void purgeOldKeys() {

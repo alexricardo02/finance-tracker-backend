@@ -8,7 +8,7 @@ public class ExchangeApiResponse {
     private String date;
     private Map<String, Double> rates;
 
-    // getters y setters
+    // Getters and setters
     public boolean isSuccess() { return success; }
     public void setSuccess(boolean success) { this.success = success; }
     public String getBase() { return base; }

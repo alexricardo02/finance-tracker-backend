@@ -19,10 +19,10 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>, JpaS
 	
 	boolean existsByCategory_CategoryId(Integer categoryId);
 	
-	// NEW METHOD: return a page
+  // NEW METHOD: returns a page
     Page<Expense> findByUserUserId(int userId, Pageable pageable);
 
-	// Obtener todas las expenses de un tipo
+  // Retrieve all expenses for a given type
     @Query(
             value = "SELECT * FROM expenses e " +
                     "WHERE e.type = :expenseTypeName AND e.user_id = :userId AND e.deleted_at IS NULL",
@@ -43,7 +43,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>, JpaS
             )
 	Double getTotalExpenseAmountBetweenAndUser(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, @Param("userId") Integer userId);
 	
-	// obtener total de gasto por type
+  // Get total expense amount by type
     @Query(
             value = "SELECT COALESCE(SUM(COALESCE(e.amount_primary_currency, e.amount)), 0) FROM expenses e " +
                     "WHERE e.type = :expenseTypeName AND e.user_id = :userId AND e.deleted_at IS NULL",
@@ -52,7 +52,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>, JpaS
 	Double getTotalExpenseAmountByTypeAndUser(@Param("expenseTypeName") String expenseTypeName, @Param("userId") Integer userId);
 	
 	
-	//Get total amount of Expenses per month
+  // Get total expense amount per month
     @Query(
             value = "SELECT COALESCE(SUM(COALESCE(e.amount_primary_currency, e.amount)), 0) FROM expenses e " +
                     "WHERE EXTRACT(MONTH FROM e.date) = :monthNumber AND e.user_id = :userId AND e.deleted_at IS NULL",
@@ -60,7 +60,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>, JpaS
             )
 	Double getTotalExpenseAmountByMonthAndUser(@Param("monthNumber") Integer monthNumber, @Param("userId") Integer userId);
 	
-	//Get total amount of Expenses per year
+  // Get total expense amount per year
     @Query(
             value = "SELECT COALESCE(SUM(COALESCE(e.amount_primary_currency, e.amount)), 0) FROM expenses e " +
                     "WHERE EXTRACT(YEAR FROM e.date) = :year AND e.user_id = :userId AND e.deleted_at IS NULL",
@@ -69,7 +69,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, Integer>, JpaS
 	Double getTotalExpenseAmountByYearAndUser(@Param("year") Integer year, @Param("userId") Integer userId);
 	
 	
-	//Get total amount of Expenses per day
+  // Get total expense amount per day
     @Query(
             value = "SELECT COALESCE(SUM(COALESCE(e.amount_primary_currency, e.amount)), 0) FROM expenses e " +
                     "WHERE EXTRACT(DAY FROM e.date) = :day AND e.user_id = :userId AND e.deleted_at IS NULL",

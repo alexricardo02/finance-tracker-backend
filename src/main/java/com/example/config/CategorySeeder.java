@@ -18,11 +18,11 @@ public class CategorySeeder implements CommandLineRunner {
     
     @Override
     public void run(String... args) throws Exception {
-        // Verificamos si ya existen categorías globales (user_id IS NULL)
+        // Check whether global categories already exist (user_id IS NULL)
         List<Category> globalCategories = categoryRepository.findByUserIsNull();
         
         if (globalCategories.isEmpty()) {
-            System.out.println("Sembrando categorías por defecto en la base de datos...");
+            System.out.println("Seeding default categories into the database...");
             
             List<Category> defaults = Arrays.asList(
                 new Category("Salary", "income", null),
@@ -40,7 +40,7 @@ public class CategorySeeder implements CommandLineRunner {
             );
             
             categoryRepository.saveAll(defaults);
-            System.out.println("Categorías por defecto creadas exitosamente.");
+            System.out.println("Default categories created successfully.");
         }
     }
 }

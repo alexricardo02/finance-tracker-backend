@@ -16,42 +16,42 @@ import com.example.models.User;
 @Repository
 public interface UserRepository extends JpaRepository<User, Integer>{
 	
-	// Buscar usuario por username (para login)
+  // Find user by username (for login)
     Optional<User> findByUsername(String username);
     
     Integer findUserIdByUsername(String username);
    
 
-    // Buscar usuario por email (para recuperación de contraseña)
+      // Find user by email (for password recovery)
     Optional<User> findByEmail(String email);
 
-    // Verificar si un username ya existe (para registro)
+      // Check whether a username already exists (for registration)
     boolean existsByUsername(String username);
 
-    // Verificar si un email ya existe (para registro)
+      // Check whether an email already exists (for registration)
     boolean existsByEmail(String email);
     
-    // Obtener todos los gastos de un usuario
+      // Retrieve all expenses for a user
     @Query("SELECT e FROM Expense e WHERE e.user.id = :userId")
     List<Expense> findExpensesByUserId(@Param("userId") Integer userId);
 
-    // Obtener todos los ingresos de un usuario
+      // Retrieve all incomes for a user
     @Query("SELECT i FROM Income i WHERE i.user.id = :userId")
     List<Income> findIncomesByUserId(@Param("userId") Integer userId);
     
-    // Actualizar contraseña
+      // Update password
     @Modifying 
     @Query(
 	        value = "UPDATE users SET password_hash = :newPassword WHERE user_id = :userId",
-	        nativeQuery = true // ¡Indica que es SQL!
+          nativeQuery = true // Indicates that this is SQL
 	    )
     void updatePassword(@Param("userId") Integer userId, @Param("newPassword") String newPassword);
     
-    // Actualizar email
+      // Update email
     @Modifying 
     @Query(
 	        value = "UPDATE users SET email = :newEmail WHERE user_id = :userId",
-	        nativeQuery = true // ¡Indica que es SQL!
+          nativeQuery = true // Indicates that this is SQL
 	    )
     void updateEmail(@Param("userId") Integer userId, @Param("newEmail") String newEmail);
 

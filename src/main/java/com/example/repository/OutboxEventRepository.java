@@ -6,6 +6,6 @@ import java.util.List;
 
 public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long> {
     
-    // Consulta para que el Job busque solo los eventos que aún no se han enviado a RabbitMQ
+    // Query so the job only finds events that have not yet been sent to RabbitMQ
     List<OutboxEvent> findByProcessedFalseOrderByCreatedAtAsc();
 }

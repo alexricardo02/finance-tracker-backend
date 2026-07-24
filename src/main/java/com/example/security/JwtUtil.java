@@ -20,7 +20,7 @@ import java.util.UUID;
 @Component
 public class JwtUtil {
 	
-	// Llave secreta (en producción debe venir de una variable de entorno)
+  // Secret key (in production it should come from an environment variable)
 	@Value("${jwt.secret}")
 	private String secret;
 
@@ -31,9 +31,9 @@ public class JwtUtil {
 	    byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
 	    this.key = Keys.hmacShaKeyFor(keyBytes);
 	}
-    private final long expirationTime = 900000; // 15 minutos
+    private final long expirationTime = 900000; // 15 minutes
     
-    // GENERAR TOKEN
+    // Generate token
     public String generateToken(String username, Role role) {
         String jti = UUID.randomUUID().toString();
         return Jwts.builder()
@@ -46,12 +46,12 @@ public class JwtUtil {
                 .compact();
     }
     
- // EXTRAER USERNAME
+	 // Extract username
     public String extractUsername(String token) {
         return getClaims(token).getSubject();
     }
 
-    // VALIDAR TOKEN
+    // Validate token
     public boolean isTokenValid(String token) {
         try {
             return getClaims(token).getExpiration().after(new Date());

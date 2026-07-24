@@ -52,7 +52,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 	            prefix = "register_limit:";
 	            rateLimitId = getClientIP(request);
 	        } else if (uri.equals("/api/users/refresh")) {
-	            // NUEVO: sin esto, /refresh podía ser golpeado sin límite
+	            // NEW: without this, /refresh could be hit without any limit
 	            configSupplier = getConfigSupplierForRefresh();
 	            prefix = "refresh_limit:";
 	            rateLimitId = getClientIP(request);
@@ -141,7 +141,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 		if (xfHeader == null || xfHeader.isEmpty() || "unknown".equalsIgnoreCase(xfHeader)) {
 			return request.getRemoteAddr();
 		}
-		return xfHeader.split(",")[0].trim(); // Extrae la IP real del usuario
+		return xfHeader.split(",")[0].trim(); // Extract the user's real IP address
 	}
 
 }

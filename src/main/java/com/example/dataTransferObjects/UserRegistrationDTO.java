@@ -5,14 +5,14 @@ import jakarta.validation.constraints.Pattern;
 
 public class UserRegistrationDTO {
 	
-	@NotBlank(message = "El nombre de usuario es obligatorio")
+	@NotBlank(message = "The username is required")
 	private String username;
 	
-	@NotBlank(message = "La contraseña es obligatoria")
-	@Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).{8,}$", message = "La contraseña debe tener al menos 8 caracteres, una letra y un número")
-    private String password; // Texto plano, no hash
+	@NotBlank(message = "The password is required")
+	@Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).{8,}$", message = "The password must contain at least 8 characters, one letter, and one number")
+    private String password; // Plain text, not hashed
 	
-	@NotBlank(message = "El email es obligatorio")
+	@NotBlank(message = "The email is required")
     private String email;
 
 	public String getUsername() {
@@ -39,9 +39,9 @@ public class UserRegistrationDTO {
 		this.email = email;
 	}
 
-	public UserRegistrationDTO(@NotBlank(message = "El nombre de usuario es obligatorio") String username,
-			@NotBlank(message = "La contraseña es obligatoria") @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).{8,}$", message = "La contraseña debe tener al menos 8 caracteres, una letra y un número") String password,
-			@NotBlank(message = "El email es obligatorio") String email) {
+	public UserRegistrationDTO(@NotBlank(message = "The username is required") String username,
+			@NotBlank(message = "The password is required") @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).{8,}$", message = "The password must contain at least 8 characters, one letter, and one number") String password,
+			@NotBlank(message = "The email is required") String email) {
 		super();
 		this.username = username;
 		this.password = password;
