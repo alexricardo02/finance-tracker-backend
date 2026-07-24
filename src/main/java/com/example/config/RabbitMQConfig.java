@@ -13,7 +13,7 @@ public class RabbitMQConfig {
     public static final String CURRENCY_QUEUE = "finance.currency-changed.queue";
     public static final String CURRENCY_ROUTING_KEY = "currency.changed";
 
-    // Dead Letter Queue: si el consumer falla 3 veces, el mensaje cae aquí en vez de perderse
+    // Dead Letter Queue: if the consumer fails 3 times, the message is routed here instead of being lost
     public static final String DLQ = "finance.currency-changed.dlq";
 
     @Bean

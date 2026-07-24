@@ -33,12 +33,12 @@ public class CategoryController {
     @Autowired
     private UserRepository userRepository;
 
-    // Utilitário para obter o username do token JWT
+    // Utility method to obtain the username from the JWT token
     private String getAuthenticatedUsername() {
         return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
-    // 1. Obter todas as categorias do utilizador
+    // 1. Retrieve all categories for the current user
     @GetMapping
     public ResponseEntity<List<CategoryDTO>> getUserCategories() {
         User user = userRepository.findByUsername(getAuthenticatedUsername())
@@ -52,7 +52,7 @@ public class CategoryController {
         return ResponseEntity.ok(categories);
     }
 
-    // 2. Criar uma nova categoria
+    // 2. Create a new category
     @PostMapping
     public ResponseEntity<CategoryDTO> createCategory(@RequestBody CategoryDTO categoryDTO) {
         User user = userRepository.findByUsername(getAuthenticatedUsername())

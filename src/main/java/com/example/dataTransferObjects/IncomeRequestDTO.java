@@ -10,16 +10,16 @@ import jakarta.validation.constraints.Positive;
 public class IncomeRequestDTO {
 
 	@NotNull(message = "Amount is required")
-	@Positive(message = "El income tiene que ser positivo")
+	@Positive(message = "The income amount must be positive")
     private Double amount;
 	
 	@NotNull
 	private String currency;
 
-	@NotNull(message = "La fecha es obligatoria")
+	@NotNull(message = "The date is required")
     private LocalDate date;
     
-	@NotNull(message = "La categoría es obligatoria")
+	@NotNull(message = "The category is required")
     private Integer categoryId; 
 	
 	private String description;
@@ -27,7 +27,7 @@ public class IncomeRequestDTO {
 	@NotNull(message = "Payment method is mandatory")
     private PaymentMethod paymentMethod;
     
-	@NotNull(message = "El usuario debe existir")
+	@NotNull(message = "The user must exist")
     private Integer userId;
     
     

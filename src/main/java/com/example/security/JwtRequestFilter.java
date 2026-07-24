@@ -49,7 +49,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             try {
                 username = jwtUtil.extractUsername(jwt);
             } catch (Exception e) {
-                logger.error("No se pudo extraer el username del token");
+                  logger.error("Could not extract the username from the token");
             }
         }
         
@@ -63,9 +63,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                         .map(User::isActive)
                         .orElse(false);
             	
-            	if (!isActive) {
-                    // Si el usuario no existe (o is_active=false por el @Where), bloqueamos la petición
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token inválido o cuenta desactivada");
+                if (!isActive) {
+                    // If the user does not exist (or is_active=false because of @Where), block the request
+                      response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token or deactivated account");
                     return;
                 }
             	

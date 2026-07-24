@@ -29,7 +29,7 @@ public class OutboxRelayJob {
                 outboxEventRepository.save(event);
                 
             } catch (Exception e) {
-                System.err.println("Error enviando evento a RabbitMQ, se reintentará: " + e.getMessage());
+                System.err.println("Error sending event to RabbitMQ; it will be retried: " + e.getMessage());
             }
         }
     }

@@ -44,9 +44,9 @@ public class IdempotencyFilter extends OncePerRequestFilter {
             return;
         }
 
-        // Reserva atómica: status=0 significa "procesando". El constraint UNIQUE
-        // de idempotencyKey en DB es lo que realmente previene la doble ejecución
-        // ante requests concurrentes (antes solo se validaba con un SELECT previo).
+        // Atomic reservation: status=0 means "processing". The UNIQUE constraint
+        // on idempotencyKey in the database is what actually prevents duplicate execution
+        // under concurrent requests (previously this was only checked with a prior SELECT).
         IdempotencyKey reservation = new IdempotencyKey();
         reservation.setIdempotencyKey(idempotencyKey);
         reservation.setResponseStatus(0);
@@ -85,7 +85,7 @@ public class IdempotencyFilter extends OncePerRequestFilter {
                 idempotencyKeyRepository.save(rec);
             });
         } else {
-            // Si falló, liberamos la key para permitir reintento con la misma Idempotency-Key
+            // If it failed, release the key to allow a retry with the same Idempotency-Key
             idempotencyKeyRepository.findByIdempotencyKey(idempotencyKey)
                     .ifPresent(idempotencyKeyRepository::delete);
         }
