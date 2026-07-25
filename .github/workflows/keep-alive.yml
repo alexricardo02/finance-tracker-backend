@@ -1,0 +1,11 @@
+name: Keep Backend Warm
+on:
+  schedule:
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend health
+        run: curl -sf --max-time 25 https://finance-tracker-backend-71t9.onrender.com/actuator/health/liveness || true
