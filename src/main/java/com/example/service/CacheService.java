@@ -18,9 +18,14 @@ public class CacheService {
     // and ensuring tenant isolation in a shared Redis instance.
     public void evictUserFinancialCache(String username) {
         ScanOptions options = ScanOptions.scanOptions().match("*" + username + "*").count(100).build();
-        try (Cursor<byte[]> cursor = redisTemplate.getConnectionFactory().getConnection().scan(options)) {
-            cursor.forEachRemaining(key -> redisTemplate.getConnectionFactory().getConnection().del(key));
-        }
+        org.springframework.data.redis.connection.RedisConnection connection = redisTemplate.getConnectionFactory().getConnection();
+                 try (Cursor<byte[]> cursor = connection.scan(options)) {
+                     while (cursor.hasNext()) {
+                         connection.del(cursor.next());
+                     }
+                 } finally {
+                     connection.close(); // Retorna la conexión al pool para evitar fugas de memoria
+                 }
     }
     
  // WHY: Explicitly target global dictionary keys that don't contain a username
