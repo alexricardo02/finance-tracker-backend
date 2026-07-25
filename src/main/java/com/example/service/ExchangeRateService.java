@@ -18,12 +18,20 @@ import java.util.Map;
 public class ExchangeRateService {
 
     private static final Logger log = LoggerFactory.getLogger(ExchangeRateService.class);
-    private final RestClient dolarApiClient = RestClient.create("https://dolarapi.com");
-    private final RestClient frankfurterClient = RestClient.create("https://api.frankfurter.dev");
+    private final RestClient dolarApiClient;
+    private final RestClient frankfurterClient;
     
     @Autowired
     @Lazy
     private ExchangeRateService self;
+    
+    @Autowired
+        public ExchangeRateService(
+                @org.springframework.beans.factory.annotation.Qualifier("dolarApiClient") RestClient dolarApiClient,
+                @org.springframework.beans.factory.annotation.Qualifier("frankfurterClient") RestClient frankfurterClient) {
+            this.dolarApiClient = dolarApiClient;
+            this.frankfurterClient = frankfurterClient;
+        }
 
     @Cacheable(value = "usd_ars_oficial", key = "'rate'")
     @CircuitBreaker(name = "exchangeRate", fallbackMethod = "getOficialRateFallback")
@@ -41,8 +49,8 @@ public class ExchangeRateService {
     }
     
  // Fallback: NO tirar 500. Devuelve el último valor válido o un valor conservador.
-    private ExchangeRateResponseDTO getOficialRateFallback(Throwable t) {
-        log.warn("Circuit breaker OPEN para DolarAPI. Usando fallback. Causa: {}", t.getMessage());
+    public ExchangeRateResponseDTO getOficialRateFallback(Throwable t) {
+    	log.warn("Circuit breaker OPEN para DolarAPI. Usando fallback. Causa: {}", t.getMessage());
         ExchangeRateResponseDTO fallback = new ExchangeRateResponseDTO();
         fallback.setCompra(0.0);
         fallback.setVenta(0.0);
