@@ -9,16 +9,18 @@ import com.example.models.User;
 import com.example.repository.CategoryRepository;
 import com.example.repository.ExpenseRepository;
 import com.example.repository.UserRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.util.Date;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,7 +30,6 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ExpenseServiceTest {
-	/**
 
     @Mock private ExpenseRepository expenseRepository;
     @Mock private UserRepository userRepository;
@@ -44,14 +45,14 @@ class ExpenseServiceTest {
 
     @BeforeEach
     void setUp() {
-        user = new User("john", "john@test.com", "hash", new java.util.Date());
+        ReflectionTestUtils.setField(expenseService, "meterRegistry", new SimpleMeterRegistry());
+
+        user = new User("john", "john@test.com", "hash", new Date());
         user.setUser_id(1);
 
-        // WHY: Schema normalization replaced string-based types with a relational Category entity
-        category = new Category("Food", "Expense", user);
+        category = new Category("Food", "expense", user);
         category.setCategoryId(1);
 
-        // WHY: The Expense constructor now requires a Category object and a PaymentMethod enum instead of raw strings
         expense = new Expense(20, 150.0, "USD", LocalDate.of(2026, 7, 5), category, "Expense", "lunch", PaymentMethod.DEBIT_CARD);
         expense.setUser(user);
     }
@@ -62,24 +63,20 @@ class ExpenseServiceTest {
         dto.setAmount(150.0);
         dto.setCurrency("USD");
         dto.setDate(LocalDate.of(2026, 7, 5));
-        
-        // WHY: ExpenseRequestDTO uses categoryId and paymentMethod now, typeName was removed
         dto.setCategoryId(1);
         dto.setPaymentMethod(PaymentMethod.DEBIT_CARD);
         dto.setUserId(1);
 
         when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
-        // WHY: ExpenseService.saveExpense fetches the Category from DB before saving
         when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
-        
-        // FIX: Simulamos la respuesta del servicio de divisas para evitar el NullPointerException
         when(exchangeRateService.getConversionRate(any(), any(), any())).thenReturn(1.0);
-        
         when(expenseRepository.save(any(Expense.class))).thenReturn(expense);
 
         ExpenseResponseDTO result = expenseService.saveExpense(dto, "john");
 
         assertThat(result.getAmount()).isEqualTo(150.0);
+        verify(cacheService).evictUserFinancialCache("john");
+        verify(cacheService).evictGlobalCache("all_expenses_types", "all");
     }
 
     @Test
@@ -104,6 +101,19 @@ class ExpenseServiceTest {
         dto.setAmount(100.0);
         dto.setUserId(1);
         dto.setCategoryId(null);
+
+        assertThatThrownBy(() -> expenseService.saveExpense(dto, "john"))
+                .isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
+    void saveExpense_categoryNotFound_throwsResponseStatusException() {
+        ExpenseRequestDTO dto = new ExpenseRequestDTO();
+        dto.setAmount(100.0);
+        dto.setUserId(1);
+        dto.setCategoryId(999);
+
+        when(categoryRepository.findById(999)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> expenseService.saveExpense(dto, "john"))
                 .isInstanceOf(ResponseStatusException.class);
@@ -142,6 +152,8 @@ class ExpenseServiceTest {
 
         verify(expenseRepository, times(1)).save(expense);
         assertThat(expense.getDeletedAt()).isNotNull();
+        verify(cacheService).evictUserFinancialCache("john");
+        verify(cacheService).evictGlobalCache("all_expenses_types", "all");
     }
 
     @Test
@@ -150,6 +162,8 @@ class ExpenseServiceTest {
 
         assertThatThrownBy(() -> expenseService.deleteExpense(20, "intruder"))
                 .isInstanceOf(SecurityException.class);
+
+        verify(expenseRepository, never()).save(any());
     }
 
     @Test
@@ -157,19 +171,14 @@ class ExpenseServiceTest {
         ExpenseRequestDTO dto = new ExpenseRequestDTO();
         dto.setAmount(200.0);
         dto.setDate(LocalDate.of(2026, 8, 1));
-        
-        // WHY: Aligning test payload with updated DTO structure
         dto.setCategoryId(1);
         dto.setPaymentMethod(PaymentMethod.CASH);
         dto.setDescription("updated");
+        dto.setCurrency("USD");
 
         when(expenseRepository.findById(20)).thenReturn(Optional.of(expense));
-        // WHY: updateExpense also validates/fetches the new Category from DB
         when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
-        
-        // FIX: Simulamos la respuesta de divisas también en la actualización
         when(exchangeRateService.getConversionRate(any(), any(), any())).thenReturn(1.0);
-        
         when(expenseRepository.save(any(Expense.class))).thenReturn(expense);
 
         ExpenseResponseDTO result = expenseService.updateExpense(20, dto, "john");
@@ -203,5 +212,4 @@ class ExpenseServiceTest {
         assertThatThrownBy(() -> expenseService.getTotalExpenseAmounByDayAndUser(50, "john"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
-    **/
 }
