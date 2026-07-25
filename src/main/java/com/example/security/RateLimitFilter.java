@@ -65,29 +65,29 @@ public class RateLimitFilter extends OncePerRequestFilter {
 	    }
 
 	    boolean isMutationEndpoint = (uri.startsWith("/api/incomes") || uri.startsWith("/api/expenses")
-	            || uri.startsWith("/api/categories") || uri.startsWith("/api/settings")
-	            || uri.startsWith("/api/imports"))
-	            && (method.equals("POST") || method.equals("PUT") || method.equals("DELETE"));
+				|| uri.startsWith("/api/categories") || uri.startsWith("/api/settings")
+				|| uri.startsWith("/api/imports"))
+				&& (method.equals("POST") || method.equals("PUT") || method.equals("DELETE"));
 
-	    if (isMutationEndpoint) {
-	        String username = getAuthenticatedUsername();
-	        if (username != null) {
-	            checkAndConsume(response, "mutation_limit:", username, getConfigSupplierForMutations());
-	            if (response.isCommitted())
-	                return;
-	        }
-	    }
+		if (isMutationEndpoint) {
+			String username = getAuthenticatedUsername();
+			if (username != null) {
+				if (!checkAndConsume(response, "mutation_limit:", username, getConfigSupplierForMutations())) {
+					return;
+				}
+			}
+		}
 
-	    if (configSupplier != null) {
-	        checkAndConsume(response, prefix, rateLimitId, configSupplier);
-	        if (response.isCommitted())
-	            return;
-	    }
+		if (configSupplier != null) {
+			if (!checkAndConsume(response, prefix, rateLimitId, configSupplier)) {
+				return;
+			}
+		}
 
 	    filterChain.doFilter(request, response);
 	}
 
-	private void checkAndConsume(HttpServletResponse response, String prefix, String id,
+	private boolean checkAndConsume(HttpServletResponse response, String prefix, String id,
 	        Supplier<BucketConfiguration> configSupplier) throws IOException {
 	    byte[] key = (prefix + id).getBytes();
 	    Bucket bucket = proxyManager.builder().build(key, configSupplier);
@@ -99,7 +99,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
 	        response.setHeader("Retry-After", String.valueOf(waitSeconds));
 	        response.setContentType("application/json");
 	        response.getWriter().write("{\"error\": \"Too many requests. Please slow down.\", \"retryAfterSeconds\": " + waitSeconds + "}");
+	        return false;
 	    }
+	    return true;
 	}
 
 	private Supplier<BucketConfiguration> getConfigSupplierForRefresh() {
