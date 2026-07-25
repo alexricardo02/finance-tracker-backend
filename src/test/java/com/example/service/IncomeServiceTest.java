@@ -9,27 +9,29 @@ import com.example.models.User;
 import com.example.repository.CategoryRepository;
 import com.example.repository.IncomeRepository;
 import com.example.repository.UserRepository;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.util.Date;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class IncomeServiceTest {
-	
-	/**
+
     @Mock private CategoryRepository categoryRepository;
     @Mock private IncomeRepository incomeRepository;
     @Mock private UserRepository userRepository;
@@ -44,7 +46,11 @@ class IncomeServiceTest {
 
     @BeforeEach
     void setUp() {
-        user = new User("john", "john@test.com", "hash", new java.util.Date());
+        // WHY: MeterRegistry is not mocked because Micrometer's default counter()
+        // delegates to abstract methods; a real SimpleMeterRegistry avoids NPEs on .increment().
+        ReflectionTestUtils.setField(incomeService, "meterRegistry", new SimpleMeterRegistry());
+
+        user = new User("john", "john@test.com", "hash", new Date());
         user.setUser_id(1);
 
         category = new Category();
@@ -72,16 +78,14 @@ class IncomeServiceTest {
 
         when(categoryRepository.findById(6)).thenReturn(Optional.of(category));
         when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
-        
-        // FIX: Prevenimos el NullPointerException devolviendo una tasa fija
         when(exchangeRateService.getConversionRate(any(), any(), any())).thenReturn(1.0);
-        
         when(incomeRepository.save(any(Income.class))).thenReturn(income);
 
         IncomeResponseDTO result = incomeService.saveIncome(dto, "john");
 
         assertThat(result.getIncomeId()).isEqualTo(10);
         assertThat(result.getAmount()).isEqualTo(233.0);
+        verify(cacheService).evictUserFinancialCache("john");
     }
 
     @Test
@@ -91,6 +95,16 @@ class IncomeServiceTest {
 
         assertThatThrownBy(() -> incomeService.saveIncome(dto, "john"))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void saveIncome_categoryIdNull_throwsResponseStatusException() {
+        IncomeRequestDTO dto = new IncomeRequestDTO();
+        dto.setAmount(100.0);
+        dto.setCategoryId(null);
+
+        assertThatThrownBy(() -> incomeService.saveIncome(dto, "john"))
+                .isInstanceOf(ResponseStatusException.class);
     }
 
     @Test
@@ -139,14 +153,17 @@ class IncomeServiceTest {
         verify(incomeRepository, times(1)).save(income);
         assertThat(income.getDeletedAt()).isNotNull();
         assertThat(income.getDeletedBy()).isEqualTo("john");
+        verify(cacheService).evictUserFinancialCache("john");
     }
 
     @Test
-    void deleteIncome_wrongUser_throwsSecurityException() {
+    void deleteIncome_wrongUser_throwsSecurityException_doesNotDelete() {
         when(incomeRepository.findById(10)).thenReturn(Optional.of(income));
 
         assertThatThrownBy(() -> incomeService.deleteIncome(10, "intruder"))
                 .isInstanceOf(SecurityException.class);
+
+        verify(incomeRepository, never()).save(any());
     }
 
     @Test
@@ -169,15 +186,13 @@ class IncomeServiceTest {
 
         when(incomeRepository.findById(10)).thenReturn(Optional.of(income));
         when(categoryRepository.findById(6)).thenReturn(Optional.of(category));
-        
-        // FIX: Prevenimos el NullPointerException en la actualización
         when(exchangeRateService.getConversionRate(any(), any(), any())).thenReturn(1.0);
-        
         when(incomeRepository.save(any(Income.class))).thenReturn(income);
 
         IncomeResponseDTO result = incomeService.updateIncome(10, dto, "john");
 
         assertThat(result).isNotNull();
+        verify(cacheService).evictUserFinancialCache("john");
     }
 
     @Test
@@ -187,6 +202,17 @@ class IncomeServiceTest {
 
         assertThatThrownBy(() -> incomeService.updateIncome(10, dto, "intruder"))
                 .isInstanceOf(SecurityException.class);
+    }
+
+    @Test
+    void updateIncome_categoryNotFound_throwsResponseStatusException() {
+        IncomeRequestDTO dto = new IncomeRequestDTO();
+        dto.setCategoryId(999);
+        when(incomeRepository.findById(10)).thenReturn(Optional.of(income));
+        when(categoryRepository.findById(999)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> incomeService.updateIncome(10, dto, "john"))
+                .isInstanceOf(ResponseStatusException.class);
     }
 
     @Test
@@ -214,5 +240,4 @@ class IncomeServiceTest {
 
         assertThat(result).isEqualTo(0.0);
     }
-    **/
 }
