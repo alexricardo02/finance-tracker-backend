@@ -23,7 +23,6 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpe
 	
 		Page<Income> findByUserUserId(int userId, Pageable pageable);
 	
-		// Retrieve all incomes for a given type
 		@Query(
 		        value = "SELECT i.* FROM incomes i " +
 		                "JOIN categories c ON i.category_id = c.category_id " +
@@ -32,9 +31,7 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpe
 		    )
 		List<Income> findByIncomeTypeNameAndUser(@Param("incomeTypeName") String incomeTypeName, @Param("userId") Integer userId);
 	
-		
-		// Get total income amount by type
-		@Query(
+				@Query(
 		        value = "SELECT COALESCE(SUM(COALESCE(i.amount_primary_currency, i.amount)), 0) FROM incomes i " +
 		                "JOIN categories c ON i.category_id = c.category_id " +
 		                "WHERE c.name = :incomeTypeName AND i.user_id = :userId AND i.deleted_at IS NULL",
@@ -42,16 +39,13 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpe
 		        )
 		Double getTotalIncomeAmountByTypeAndUser(@Param("incomeTypeName") String incomeTypeName, @Param("userId") Integer userId);
 		
-		
-		// Get total income amount per month
-		@Query(
+				@Query(
 		        value = "SELECT COALESCE(SUM(COALESCE(i.amount_primary_currency, i.amount)), 0) FROM incomes i " +
 		                "WHERE EXTRACT(MONTH FROM i.date) = :monthNumber AND i.user_id = :userId AND i.deleted_at IS NULL",
 		        nativeQuery = true
 		        )
 		Double getTotalIncomeAmountByMonthAndUser(@Param("monthNumber") Integer monthNumber, @Param("userId") Integer userId);
 		
-		// Get total income amount per year
 		@Query(
 		        value = "SELECT COALESCE(SUM(COALESCE(i.amount_primary_currency, i.amount)), 0) FROM incomes i " +
 		                "WHERE EXTRACT(YEAR FROM i.date) = :year AND i.user_id = :userId AND i.deleted_at IS NULL",
@@ -59,15 +53,12 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpe
 		        )
 		Double getTotalIncomeAmountByYearAndUser(@Param("year") Integer year, @Param("userId") Integer userId);
 				
-				
-		// Get total income amount per day
 		@Query(
 		        value = "SELECT COALESCE(SUM(COALESCE(i.amount_primary_currency, i.amount)), 0) FROM incomes i " +
 		                "WHERE EXTRACT(DAY FROM i.date) = :day AND i.user_id = :userId AND i.deleted_at IS NULL",
 		        nativeQuery = true
 		        )
 		Double getTotalIncomeAmountByDayAndUser(@Param("day") Integer day, @Param("userId") Integer userId);
-				
 				
 		@Query(
 		        value = "SELECT COALESCE(SUM(COALESCE(i.amount_primary_currency, i.amount)), 0) FROM incomes i " +
@@ -76,7 +67,6 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpe
 		        )
 		Double getTotalIncomeAmountBetweenAndUser(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, @Param("userId") Integer userId);
 
-		
 		@Modifying
 		@Query(value = "DELETE FROM incomes WHERE user_id = :userId", nativeQuery = true)
 		void hardDeleteAllByUserId(@Param("userId") Integer userId);
