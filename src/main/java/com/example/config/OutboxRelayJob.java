@@ -23,7 +23,7 @@ public class OutboxRelayJob {
 
         for (OutboxEvent event : pendingEvents) {
             try {
-                rabbitTemplate.convertAndSend("tu_exchange_name", "tu_routing_key", event.getPayload());
+            	rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.CURRENCY_ROUTING_KEY, event.getPayload());
                 
                 event.setProcessed(true);
                 outboxEventRepository.save(event);

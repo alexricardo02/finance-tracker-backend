@@ -16,30 +16,22 @@ import com.example.models.User;
 @Repository
 public interface UserRepository extends JpaRepository<User, Integer>{
 	
-  // Find user by username (for login)
     Optional<User> findByUsername(String username);
     
     Integer findUserIdByUsername(String username);
    
-
-      // Find user by email (for password recovery)
     Optional<User> findByEmail(String email);
 
-      // Check whether a username already exists (for registration)
     boolean existsByUsername(String username);
 
-      // Check whether an email already exists (for registration)
     boolean existsByEmail(String email);
     
-      // Retrieve all expenses for a user
     @Query("SELECT e FROM Expense e WHERE e.user.id = :userId")
     List<Expense> findExpensesByUserId(@Param("userId") Integer userId);
 
-      // Retrieve all incomes for a user
     @Query("SELECT i FROM Income i WHERE i.user.id = :userId")
     List<Income> findIncomesByUserId(@Param("userId") Integer userId);
     
-      // Update password
     @Modifying 
     @Query(
 	        value = "UPDATE users SET password_hash = :newPassword WHERE user_id = :userId",
@@ -47,7 +39,6 @@ public interface UserRepository extends JpaRepository<User, Integer>{
 	    )
     void updatePassword(@Param("userId") Integer userId, @Param("newPassword") String newPassword);
     
-      // Update email
     @Modifying 
     @Query(
 	        value = "UPDATE users SET email = :newEmail WHERE user_id = :userId",
