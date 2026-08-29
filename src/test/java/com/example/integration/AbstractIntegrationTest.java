@@ -76,6 +76,8 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.mail.username", () -> "test");
         registry.add("spring.mail.password", () -> "test");
         registry.add("management.health.mail.enabled", () -> "false");
+        
+        registry.add("spring.flyway.table", () -> "flyway_ci_history");
 
         // JWT secret for tests
         registry.add("jwt.secret",
