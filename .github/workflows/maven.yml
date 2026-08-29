@@ -2,9 +2,9 @@ name: Spring Boot CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "test-implementations" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master", "test-implementations" ]
 
 permissions:
   contents: read
