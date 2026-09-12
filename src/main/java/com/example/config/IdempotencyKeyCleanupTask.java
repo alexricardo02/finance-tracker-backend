@@ -2,6 +2,7 @@ package com.example.config;
 
 import com.example.repository.IdempotencyKeyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,6 +11,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 @Component
+@ConditionalOnProperty(name = "app.scheduling.enabled", havingValue = "true", matchIfMissing = true)
 public class IdempotencyKeyCleanupTask {
 
     @Autowired

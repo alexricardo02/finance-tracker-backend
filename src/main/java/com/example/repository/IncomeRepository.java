@@ -22,6 +22,8 @@ public interface IncomeRepository extends JpaRepository<Income, Integer>, JpaSpe
 		boolean existsByCategory_CategoryId(Integer categoryId);
 	
 		Page<Income> findByUserUserId(int userId, Pageable pageable);
+
+		List<Income> findByUserUsername(String username);
 	
 		@Query(
 		        value = "SELECT i.* FROM incomes i " +

@@ -9,10 +9,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.security.Principal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -74,17 +76,13 @@ class ExportControllerTest {
     }
 
     @Test
-    void exportTransactions_unknownFormat_defaultsToCsvContentType() throws Exception {
-        byte[] fallbackBytes = "Date,Type\n".getBytes();
-        when(exportService.export(eq("john"), eq("nope"), isNull(), isNull(), isNull(), isNull(), eq("ALL")))
-                .thenReturn(fallbackBytes);
-
-        ResponseEntity<byte[]> response = exportController.exportTransactions(
-                principal, "nope", null, null, null, null, "ALL");
-
-        // WHY: the switch default branch returns text/csv for any unrecognised format
-        assertThat(response.getHeaders().getContentType())
-                .isEqualTo(MediaType.parseMediaType("text/csv"));
+    void exportTransactions_unknownFormat_throwsBadRequest() throws Exception {
+        // WHY: the controller now rejects unsupported formats with 400 BAD_REQUEST
+        // instead of silently defaulting to CSV.
+        assertThatThrownBy(() -> exportController.exportTransactions(
+                principal, "nope", null, null, null, null, "ALL"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Unsupported export format");
     }
 
     @Test

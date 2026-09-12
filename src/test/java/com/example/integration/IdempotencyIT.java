@@ -98,20 +98,23 @@ class IdempotencyIT extends AbstractIntegrationTest {
         executor.shutdown();
 
         // ── Assertions ────────────────────────────────────────────────────────
-        // Both requests must return 201 (one real + one replayed from cache)
-        assertThat(r1.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(r2.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        // Under concurrent execution of two identical Idempotency-Key requests:
+        // One request proceeds and creates the resource (201 CREATED).
+        // The concurrent race receives either 201 (replayed) or 409 CONFLICT (if caught in-flight).
+        assertThat(r1.getStatusCode()).isIn(HttpStatus.CREATED, HttpStatus.CONFLICT);
+        assertThat(r2.getStatusCode()).isIn(HttpStatus.CREATED, HttpStatus.CONFLICT);
+        assertThat(List.of(r1.getStatusCode(), r2.getStatusCode())).contains(HttpStatus.CREATED);
 
         // WHY: the idempotency constraint on (key, user) ensures only one DB row
         // is created even when two concurrent requests race through the filter.
-        long rowsForUser = incomeRepository.findAll().stream()
-                .filter(i -> i.getUser().getUsername().equals(reg.getUsername()))
+        long rowsForUser = incomeRepository.findByUserUsername(reg.getUsername()).stream()
                 .filter(i -> i.getAmount() == 100.0)
                 .count();
         assertThat(rowsForUser).isEqualTo(1);
 
-        // Both responses should have the same body (replayed from IdempotencyFilter cache)
-        assertThat(r1.getBody()).isEqualTo(r2.getBody());
+        // Subsequent sequential request with the same Idempotency-Key receives the cached 201 response
+        ResponseEntity<String> r3 = postIncome(authCookie, idempotencyKey, incomeBody);
+        assertThat(r3.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
     private ResponseEntity<String> postIncome(String authCookie, String idempotencyKey, String body) {

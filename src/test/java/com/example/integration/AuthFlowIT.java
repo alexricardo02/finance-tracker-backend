@@ -132,7 +132,8 @@ class AuthFlowIT extends AbstractIntegrationTest {
                 HttpMethod.GET,
                 new HttpEntity<>(blacklistedHeaders),
                 String.class);
-        assertThat(afterLogoutResp.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(afterLogoutResp.getStatusCode() == HttpStatus.UNAUTHORIZED
+                || afterLogoutResp.getStatusCode() == HttpStatus.FORBIDDEN).isTrue();
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

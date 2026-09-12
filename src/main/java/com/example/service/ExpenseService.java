@@ -154,10 +154,6 @@ public class ExpenseService {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
 		}
 
-		if (requestDTO.getUserId() == null) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "userId is required");
-		}
-
 		if (requestDTO.getCategoryId() == null) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CategoryId is required");
 		}

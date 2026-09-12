@@ -52,7 +52,6 @@ class IncomeControllerTest {
         request.setCurrency("USD");
         request.setDate(LocalDate.of(2026, 7, 1));
         request.setCategoryId(3);
-        request.setUserId(1);
         request.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
         when(incomeService.saveIncome(request, "john")).thenReturn(sampleResponse);
 
@@ -122,7 +121,6 @@ class IncomeControllerTest {
         request.setCurrency("USD");
         request.setDate(LocalDate.of(2026, 8, 1));
         request.setCategoryId(3);
-        request.setUserId(1);
         request.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
 
         IncomeResponseDTO updated = new IncomeResponseDTO();
