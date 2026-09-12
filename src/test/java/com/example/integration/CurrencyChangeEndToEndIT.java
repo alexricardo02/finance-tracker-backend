@@ -103,9 +103,7 @@ class CurrencyChangeEndToEndIT extends AbstractIntegrationTest {
     }
 
     private List<Income> findIncomesForUser(String username) {
-        return incomeRepository.findAll().stream()
-                .filter(i -> username.equals(i.getUser().getUsername()))
-                .toList();
+        return incomeRepository.findByUserUsername(username);
     }
 
     private String extractAuthCookie(ResponseEntity<?> response) {

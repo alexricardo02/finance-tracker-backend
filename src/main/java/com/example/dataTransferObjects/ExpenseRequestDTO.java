@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDate;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
@@ -28,23 +27,14 @@ public class ExpenseRequestDTO {
 	@NotNull(message = "Payment method is mandatory")
     private PaymentMethod paymentMethod;
 
-	@NotNull(message = "User ID is required")
-	@Positive(message = "User ID must be positive")
-	private Integer userId; // Avoid exposing User entity
+	// H-3 fix: removed userId field.
+    // The client MUST NOT supply a userId — it would allow any authenticated user to claim
+    // another user's ID (Broken Object Level Authorization / IDOR).
+    // The owning user is always resolved from Principal.getName() in the controller,
+    // then looked up in the DB inside the service. No client input is trusted for ownership.
 
 	public ExpenseRequestDTO() {
 		super();
-	}
-
-	public ExpenseRequestDTO(@Positive(message = "The amount must be positive") Double amount,
-			@NotBlank(message = "The date is required") LocalDate date,
-			@NotNull(message = "The category is required") Integer categoryId,
-			@Positive(message = "User ID must be positive") Integer userId) {
-		super();
-		this.amount = amount;
-		this.date = date;
-		this.categoryId = categoryId;
-		this.userId = userId;
 	}
 
 	public String getCurrency() {
@@ -61,14 +51,6 @@ public class ExpenseRequestDTO {
 
 	public void setCategoryId(Integer categoryId) {
 		this.categoryId = categoryId;
-	}
-
-	public Integer getUserId() {
-		return userId;
-	}
-
-	public void setUserId(Integer userId) {
-		this.userId = userId;
 	}
 
 	public Double getAmount() {
@@ -106,7 +88,7 @@ public class ExpenseRequestDTO {
 	@Override
 	public String toString() {
 		return "ExpenseRequestDTO [amount=" + amount + ", currency=" + currency + ", date=" + date + ", categoryId="
-				+ categoryId + ", description=" + description + ", userId=" + userId + "]";
+				+ categoryId + ", description=" + description + "]";
 	}
 
 }

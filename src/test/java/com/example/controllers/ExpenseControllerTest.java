@@ -52,7 +52,6 @@ class ExpenseControllerTest {
         request.setAmount(99.50);
         request.setDate(LocalDate.of(2026, 7, 1));
         request.setCategoryId(1);
-        request.setUserId(1);
         request.setPaymentMethod(PaymentMethod.CASH);
 
         when(expenseService.saveExpense(request, "john")).thenReturn(sampleResponse);
@@ -103,7 +102,6 @@ class ExpenseControllerTest {
         request.setAmount(200.0);
         request.setDate(LocalDate.of(2026, 8, 1));
         request.setCategoryId(2);
-        request.setUserId(1);
         request.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
 
         ExpenseResponseDTO updated = new ExpenseResponseDTO();
@@ -125,7 +123,6 @@ class ExpenseControllerTest {
         request.setAmount(50.0);
         request.setDate(LocalDate.of(2026, 8, 1));
         request.setCategoryId(1);
-        request.setUserId(2);
         request.setPaymentMethod(PaymentMethod.CASH);
 
         when(expenseService.updateExpense(10, request, "john"))

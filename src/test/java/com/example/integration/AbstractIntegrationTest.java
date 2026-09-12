@@ -1,22 +1,31 @@
 package com.example.integration;
 
 import com.redis.testcontainers.RedisContainer;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.RabbitMQContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
  * Base class for all integration tests.
  *
- * WHY containers are static: Testcontainers reuses the same container
- * instance across all subclass test methods (JVM-lifecycle), which avoids
- * the expensive stop/start penalty for each @Test.  All containers share
- * a single Docker network created by Testcontainers.
+ * Uses the Testcontainers "singleton container" pattern: containers are started
+ * once in a static initializer and live for the entire JVM lifetime.  This is
+ * intentional — we do NOT use @Testcontainers / @Container because the JUnit 5
+ * extension tears containers down per-class (afterAll), while Spring's
+ * TestContext cache keeps the ApplicationContext alive.  That mismatch caused
+ * leaked contexts whose @Scheduled beans (OutboxRelayJob, etc.) retried forever
+ * against destroyed containers, hanging CI for 6 hours.
+ *
+ * By starting containers manually with .start() and never stopping them, and
+ * by registering the SAME dynamic properties in a single @DynamicPropertySource,
+ * Spring's context cache key is identical across all *IT subclasses, so only
+ * ONE ApplicationContext is created and reused for the whole IT suite.
  *
  * WHY real Postgres (not H2): the production schema uses PostgreSQL-specific
  * features (e.g. @SQLDelete / @SQLRestriction soft-delete, IDENTITY columns)
@@ -24,23 +33,39 @@ import org.testcontainers.utility.DockerImageName;
  * false confidence.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
 public abstract class AbstractIntegrationTest {
 
-    @Container
     static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>(DockerImageName.parse("postgres:17-alpine"))
                     .withDatabaseName("finance_test")
                     .withUsername("test")
                     .withPassword("test");
 
-    @Container
     static final RabbitMQContainer RABBIT =
             new RabbitMQContainer(DockerImageName.parse("rabbitmq:3.13-management-alpine"));
 
-    @Container
     static final RedisContainer REDIS =
             new RedisContainer(DockerImageName.parse("redis:7-alpine"));
+
+    static {
+        // Start once for the entire JVM — Ryuk shuts them down when the JVM exits.
+        POSTGRES.start();
+        RABBIT.start();
+        REDIS.start();
+    }
+
+    @Autowired(required = false)
+    protected StringRedisTemplate redisTemplate;
+
+    @BeforeEach
+    void resetRedisState() {
+        if (redisTemplate != null && redisTemplate.getConnectionFactory() != null) {
+            try (var conn = redisTemplate.getConnectionFactory().getConnection()) {
+                conn.serverCommands().flushDb();
+            } catch (Exception ignored) {
+            }
+        }
+    }
 
     @DynamicPropertySource
     static void overrideProperties(DynamicPropertyRegistry registry) {
@@ -76,6 +101,13 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.mail.username", () -> "test");
         registry.add("spring.mail.password", () -> "test");
         registry.add("management.health.mail.enabled", () -> "false");
+        
+        registry.add("spring.flyway.table", () -> "flyway_ci_history");
+
+        // Disable @Scheduled jobs during integration tests so OutboxRelayJob and
+        // IdempotencyKeyCleanupTask do not poll against infrastructure that may
+        // be in an inconsistent state between test methods.
+        registry.add("app.scheduling.enabled", () -> "false");
 
         // JWT secret for tests
         registry.add("jwt.secret",

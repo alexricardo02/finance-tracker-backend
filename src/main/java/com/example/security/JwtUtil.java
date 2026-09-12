@@ -1,11 +1,11 @@
 package com.example.security;
 
 import io.jsonwebtoken.Claims;
-
-
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.example.models.Role;
@@ -19,21 +19,38 @@ import java.util.UUID;
 
 @Component
 public class JwtUtil {
-	
-  // Secret key (in production it should come from an environment variable)
-	@Value("${jwt.secret}")
-	private String secret;
 
-	private Key key;
+    private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);
 
-	@PostConstruct
-	public void init() {
-	    byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
-	    this.key = Keys.hmacShaKeyFor(keyBytes);
-	}
+    // Minimum 32 bytes = 256 bits required for HMAC-SHA-256
+    private static final int MIN_KEY_BYTES = 32;
+
+    // Secret key injected from environment variable — never hardcode
+    @Value("${jwt.secret}")
+    private String secret;
+
+    private Key key;
+
+    @PostConstruct
+    public void init() {
+        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        // H-2 fix: enforce minimum secret length before the key is built.
+        // Keys.hmacShaKeyFor() would throw on < 32 bytes, but we do it explicitly
+        // here so the startup failure is a clear, actionable error message rather than
+        // a cryptic WeakKeyException buried in the stack.
+        if (keyBytes.length < MIN_KEY_BYTES) {
+            throw new IllegalStateException(
+                "JWT secret is too short: " + keyBytes.length + " bytes. " +
+                "A minimum of " + MIN_KEY_BYTES + " bytes (256 bits) is required for HS256."
+            );
+        }
+        this.key = Keys.hmacShaKeyFor(keyBytes);
+        log.info("JWT signing key initialised ({} bytes)", keyBytes.length);
+    }
+    
     private final long expirationTime = 900000; // 15 minutes
     
-    // Generate token
+    // Generate token — algorithm explicitly pinned to HS256 (H-2 fix)
     public String generateToken(String username, Role role) {
         String jti = UUID.randomUUID().toString();
         return Jwts.builder()
@@ -42,7 +59,7 @@ public class JwtUtil {
                 .claim("role", role.name())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
-                .signWith(key)
+                .signWith(key, SignatureAlgorithm.HS256) // algorithm pinned — prevents "none" attacks
                 .compact();
     }
     

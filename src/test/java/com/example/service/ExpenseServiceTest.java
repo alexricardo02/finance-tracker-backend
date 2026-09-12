@@ -65,7 +65,6 @@ class ExpenseServiceTest {
         dto.setDate(LocalDate.of(2026, 7, 5));
         dto.setCategoryId(1);
         dto.setPaymentMethod(PaymentMethod.DEBIT_CARD);
-        dto.setUserId(1);
 
         when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
         when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
@@ -86,20 +85,9 @@ class ExpenseServiceTest {
     }
 
     @Test
-    void saveExpense_nullUserId_throwsResponseStatusException() {
-        ExpenseRequestDTO dto = new ExpenseRequestDTO();
-        dto.setAmount(100.0);
-        dto.setUserId(null);
-
-        assertThatThrownBy(() -> expenseService.saveExpense(dto, "john"))
-                .isInstanceOf(ResponseStatusException.class);
-    }
-
-    @Test
     void saveExpense_nullCategoryId_throwsResponseStatusException() {
         ExpenseRequestDTO dto = new ExpenseRequestDTO();
         dto.setAmount(100.0);
-        dto.setUserId(1);
         dto.setCategoryId(null);
 
         assertThatThrownBy(() -> expenseService.saveExpense(dto, "john"))
@@ -110,7 +98,6 @@ class ExpenseServiceTest {
     void saveExpense_categoryNotFound_throwsResponseStatusException() {
         ExpenseRequestDTO dto = new ExpenseRequestDTO();
         dto.setAmount(100.0);
-        dto.setUserId(1);
         dto.setCategoryId(999);
 
         when(categoryRepository.findById(999)).thenReturn(Optional.empty());
