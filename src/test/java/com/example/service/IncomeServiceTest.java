@@ -2,10 +2,17 @@ package com.example.service;
 
 import com.example.dataTransferObjects.IncomeRequestDTO;
 import com.example.dataTransferObjects.IncomeResponseDTO;
+import com.example.dataTransferObjects.PagedResponse;
 import com.example.models.Category;
 import com.example.models.Income;
 import com.example.models.PaymentMethod;
 import com.example.models.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import java.util.List;
 import com.example.repository.CategoryRepository;
 import com.example.repository.IncomeRepository;
 import com.example.repository.UserRepository;
@@ -239,5 +246,125 @@ class IncomeServiceTest {
         Double result = incomeService.getTotalIncomesLast7DaysInclusive(LocalDate.now(), "john");
 
         assertThat(result).isEqualTo(0.0);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void getFilteredIncomes_returnsPagedResponse() {
+        Page<Income> page = new PageImpl<>(List.of(income), PageRequest.of(0, 10), 1);
+        when(incomeRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        PagedResponse<IncomeResponseDTO> result = incomeService.getFilteredIncomes(
+                "john", LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31), 6L, PaymentMethod.DEBIT_CARD, 0, 10);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getIncomeId()).isEqualTo(10);
+    }
+
+    @Test
+    void findByIncomeTypeName_returnsList() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(incomeRepository.findByIncomeTypeNameAndUser("Salary", 1)).thenReturn(List.of(income));
+
+        List<IncomeResponseDTO> result = incomeService.findByIncomeTypeName("Salary", "john");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getIncomeId()).isEqualTo(10);
+    }
+
+    @Test
+    void getTotalIncomeAmountByType_returnsValue() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(incomeRepository.getTotalIncomeAmountByTypeAndUser("Salary", 1)).thenReturn(2500.0);
+
+        Double result = incomeService.getTotalIncomeAmountByType("Salary", "john");
+
+        assertThat(result).isEqualTo(2500.0);
+    }
+
+    @Test
+    void getTotalIncomesLastMonths_returnsValue() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(incomeRepository.getTotalIncomeAmountBetweenAndUser(any(), any(), eq(1))).thenReturn(1200.0);
+
+        Double result = incomeService.getTotalIncomesLastMonths(LocalDate.now(), "john");
+
+        assertThat(result).isEqualTo(1200.0);
+    }
+
+    @Test
+    void getTotalIncomesLastMonths_nullReturnsZero() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(incomeRepository.getTotalIncomeAmountBetweenAndUser(any(), any(), eq(1))).thenReturn(null);
+
+        Double result = incomeService.getTotalIncomesLastMonths(LocalDate.now(), "john");
+
+        assertThat(result).isEqualTo(0.0);
+    }
+
+    @Test
+    void getTotalIncomesLast3Months_returnsValue() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(incomeRepository.getTotalIncomeAmountBetweenAndUser(any(), any(), eq(1))).thenReturn(3600.0);
+
+        Double result = incomeService.getTotalIncomesLast3Months(LocalDate.now(), "john");
+
+        assertThat(result).isEqualTo(3600.0);
+    }
+
+    @Test
+    void getTotalIncomesLast6Months_returnsValue() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(incomeRepository.getTotalIncomeAmountBetweenAndUser(any(), any(), eq(1))).thenReturn(7200.0);
+
+        Double result = incomeService.getTotalIncomesLast6Months(LocalDate.now(), "john");
+
+        assertThat(result).isEqualTo(7200.0);
+    }
+
+    @Test
+    void getTotalIncomesLastYear_returnsValue() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(incomeRepository.getTotalIncomeAmountBetweenAndUser(any(), any(), eq(1))).thenReturn(14400.0);
+
+        Double result = incomeService.getTotalIncomesLastYear(LocalDate.now(), "john");
+
+        assertThat(result).isEqualTo(14400.0);
+    }
+
+    @Test
+    void getTotalIncomeAmounByDay_validDay_returnsAmount() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(incomeRepository.getTotalIncomeAmountByDayAndUser(10, 1)).thenReturn(350.0);
+
+        Double result = incomeService.getTotalIncomeAmounByDay(10, "john");
+
+        assertThat(result).isEqualTo(350.0);
+    }
+
+    @Test
+    void getTotalIncomeAmounByDay_invalidDay_throwsIllegalArgumentException() {
+        assertThatThrownBy(() -> incomeService.getTotalIncomeAmounByDay(0, "john"))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> incomeService.getTotalIncomeAmounByDay(32, "john"))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> incomeService.getTotalIncomeAmounByDay(null, "john"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void getTotalIncomeAmountByYear_validYear_returnsAmount() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(incomeRepository.getTotalIncomeAmountByYearAndUser(2026, 1)).thenReturn(20000.0);
+
+        double result = incomeService.getTotalIncomeAmountByYear(2026, "john");
+
+        assertThat(result).isEqualTo(20000.0);
+    }
+
+    @Test
+    void getTotalIncomeAmountByYear_nullYear_throwsIllegalArgumentException() {
+        assertThatThrownBy(() -> incomeService.getTotalIncomeAmountByYear(null, "john"))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

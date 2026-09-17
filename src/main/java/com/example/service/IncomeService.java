@@ -271,7 +271,9 @@ public class IncomeService {
 
 	@Cacheable(value = "incomes_year", key = "#username + '_' + #year")
 	public double getTotalIncomeAmountByYear(Integer year, String username) {
-
+		if (year == null) {
+			throw new IllegalArgumentException("Year cannot be null");
+		}
 		return incomeRepository.getTotalIncomeAmountByYearAndUser(year, getUserIdByUsername(username));
 	}
 
