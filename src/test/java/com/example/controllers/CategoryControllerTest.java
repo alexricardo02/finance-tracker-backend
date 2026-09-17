@@ -175,4 +175,19 @@ class CategoryControllerTest {
 
         verify(categoryRepository, never()).delete(any());
     }
+
+    @Test
+    void deleteCategory_globalCategory_throwsForbidden_doesNotDelete() {
+        // WHY: Global categories (user == null) must not be deleted by any user
+        authenticateAs("john");
+        Category globalCategory = new Category("Salary", "income", null);
+        globalCategory.setCategoryId(1);
+        when(categoryRepository.findById(1)).thenReturn(Optional.of(globalCategory));
+
+        assertThatThrownBy(() -> categoryController.deleteCategory(1))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Not authorized");
+
+        verify(categoryRepository, never()).delete(any());
+    }
 }

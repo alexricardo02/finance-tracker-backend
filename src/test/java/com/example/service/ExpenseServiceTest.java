@@ -2,10 +2,17 @@ package com.example.service;
 
 import com.example.dataTransferObjects.ExpenseRequestDTO;
 import com.example.dataTransferObjects.ExpenseResponseDTO;
+import com.example.dataTransferObjects.PagedResponse;
 import com.example.models.Category;
 import com.example.models.Expense;
 import com.example.models.PaymentMethod;
 import com.example.models.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import java.util.List;
 import com.example.repository.CategoryRepository;
 import com.example.repository.ExpenseRepository;
 import com.example.repository.UserRepository;
@@ -198,5 +205,152 @@ class ExpenseServiceTest {
     void getTotalExpenseAmounByDayAndUser_invalidDay_throwsIllegalArgumentException() {
         assertThatThrownBy(() -> expenseService.getTotalExpenseAmounByDayAndUser(50, "john"))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void getTotalExpenseAmounByDayAndUser_nullDay_throwsIllegalArgumentException() {
+        assertThatThrownBy(() -> expenseService.getTotalExpenseAmounByDayAndUser(null, "john"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void getTotalExpenseAmounByDayAndUser_dayBelowOne_throwsIllegalArgumentException() {
+        assertThatThrownBy(() -> expenseService.getTotalExpenseAmounByDayAndUser(0, "john"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void getTotalExpenseAmounByDayAndUser_validDay_returnsAmount() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(expenseRepository.getTotalExpenseAmountByDayAndUser(15, 1)).thenReturn(75.0);
+
+        Double result = expenseService.getTotalExpenseAmounByDayAndUser(15, "john");
+
+        assertThat(result).isEqualTo(75.0);
+    }
+
+    @Test
+    void getTotalExpenseAmounByMonthAndUser_validMonth_returnsAmount() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(expenseRepository.getTotalExpenseAmountByMonthAndUser(7, 1)).thenReturn(500.0);
+
+        Double result = expenseService.getTotalExpenseAmounByMonthAndUser("JULY", "john");
+
+        assertThat(result).isEqualTo(500.0);
+    }
+
+    @Test
+    void getTotalExpenseAmounByYearAndUser_validYear_returnsAmount() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(expenseRepository.getTotalExpenseAmountByYearAndUser(2026, 1)).thenReturn(5000.0);
+
+        Double result = expenseService.getTotalExpenseAmounByYearAndUser(2026, "john");
+
+        assertThat(result).isEqualTo(5000.0);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void getFilteredExpenses_returnsPagedResponse() {
+        Page<Expense> page = new PageImpl<>(List.of(expense), PageRequest.of(0, 10), 1);
+        when(expenseRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        PagedResponse<ExpenseResponseDTO> result = expenseService.getFilteredExpenses(
+                "john", LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31), 1L, PaymentMethod.DEBIT_CARD, 0, 10);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getId()).isEqualTo(20);
+        assertThat(result.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void getExpensesForCurrentUserPaginated_success() {
+        Page<Expense> page = new PageImpl<>(List.of(expense), PageRequest.of(0, 10), 1);
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(expenseRepository.findByUserUserId(eq(1), any(Pageable.class))).thenReturn(page);
+
+        PagedResponse<ExpenseResponseDTO> result = expenseService.getExpensesForCurrentUserPaginated("john", 0, 10);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getId()).isEqualTo(20);
+    }
+
+    @Test
+    void getExpensesForCurrentUserPaginated_userNotFound_throwsRuntimeException() {
+        when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> expenseService.getExpensesForCurrentUserPaginated("ghost", 0, 10))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Usuario no encontrado");
+    }
+
+    @Test
+    void getTotalExpenseAmountByTypeAndUser_returnsValue() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(expenseRepository.getTotalExpenseAmountByTypeAndUser("Food", 1)).thenReturn(300.0);
+
+        Double result = expenseService.getTotalExpenseAmountByTypeAndUser("Food", "john");
+
+        assertThat(result).isEqualTo(300.0);
+    }
+
+    @Test
+    void getTotalExpensesLast7DaysInclusiveAndUser_returnsValue() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(expenseRepository.getTotalExpenseAmountBetweenAndUser(any(), any(), eq(1))).thenReturn(150.0);
+
+        Double result = expenseService.getTotalExpensesLast7DaysInclusiveAndUser(LocalDate.now(), "john");
+
+        assertThat(result).isEqualTo(150.0);
+    }
+
+    @Test
+    void getTotalExpensesLast7DaysInclusiveAndUser_nullReturnsZero() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(expenseRepository.getTotalExpenseAmountBetweenAndUser(any(), any(), eq(1))).thenReturn(null);
+
+        Double result = expenseService.getTotalExpensesLast7DaysInclusiveAndUser(LocalDate.now(), "john");
+
+        assertThat(result).isEqualTo(0.0);
+    }
+
+    @Test
+    void getTotalExpensesLastMonthsAndUser_returnsValue() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(expenseRepository.getTotalExpenseAmountBetweenAndUser(any(), any(), eq(1))).thenReturn(450.0);
+
+        Double result = expenseService.getTotalExpensesLastMonthsAndUser(LocalDate.now(), "john");
+
+        assertThat(result).isEqualTo(450.0);
+    }
+
+    @Test
+    void getTotalExpensesLast3MonthsAndUser_returnsValue() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(expenseRepository.getTotalExpenseAmountBetweenAndUser(any(), any(), eq(1))).thenReturn(900.0);
+
+        Double result = expenseService.getTotalExpensesLast3MonthsAndUser(LocalDate.now(), "john");
+
+        assertThat(result).isEqualTo(900.0);
+    }
+
+    @Test
+    void getTotalExpensesLast6MonthsAndUser_returnsValue() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(expenseRepository.getTotalExpenseAmountBetweenAndUser(any(), any(), eq(1))).thenReturn(1800.0);
+
+        Double result = expenseService.getTotalExpensesLast6MonthsAndUser(LocalDate.now(), "john");
+
+        assertThat(result).isEqualTo(1800.0);
+    }
+
+    @Test
+    void getTotalExpensesLastYearAndUser_returnsValue() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(expenseRepository.getTotalExpenseAmountBetweenAndUser(any(), any(), eq(1))).thenReturn(3600.0);
+
+        Double result = expenseService.getTotalExpensesLastYearAndUser(LocalDate.now(), "john");
+
+        assertThat(result).isEqualTo(3600.0);
     }
 }

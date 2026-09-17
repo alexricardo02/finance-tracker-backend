@@ -4,6 +4,7 @@ import java.time.Duration;
 
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 @Configuration
+@ConditionalOnBean(RedisConnectionFactory.class)
 public class RedisConfig {
 	
 	

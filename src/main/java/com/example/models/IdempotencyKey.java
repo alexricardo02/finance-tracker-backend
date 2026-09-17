@@ -39,5 +39,6 @@ public class IdempotencyKey {
     public String getResponseBody() { return responseBody; }
     public void setResponseBody(String responseBody) { this.responseBody = responseBody; }
     public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 
 }

@@ -70,7 +70,7 @@ public class CategoryController {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
                 
-        if (!category.getUser().getUsername().equals(getAuthenticatedUsername())) {
+        if (category.getUser() == null || !category.getUser().getUsername().equals(getAuthenticatedUsername())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not authorized");
         }
         
