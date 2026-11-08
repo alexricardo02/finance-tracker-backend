@@ -105,8 +105,8 @@ class IdempotencyIT extends AbstractIntegrationTest {
         assertThat(r2.getStatusCode()).isIn(HttpStatus.CREATED, HttpStatus.CONFLICT);
         assertThat(List.of(r1.getStatusCode(), r2.getStatusCode())).contains(HttpStatus.CREATED);
 
-        // WHY: the idempotency constraint on (key, user) ensures only one DB row
-        // is created even when two concurrent requests race through the filter.
+        // The UNIQUE constraint on (user_id, idempotency_key) is what ensures only
+        // one row is created when two concurrent requests race through the filter.
         long rowsForUser = incomeRepository.findByUserUsername(reg.getUsername()).stream()
                 .filter(i -> i.getAmount() == 100.0)
                 .count();

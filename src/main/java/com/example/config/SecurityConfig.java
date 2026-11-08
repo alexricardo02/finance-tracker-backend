@@ -59,8 +59,9 @@ public class SecurityConfig {
         );
 
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
-        http.addFilterBefore(idempotencyFilter, JwtRequestFilter.class);
         http.addFilterAfter(rateLimitFilter, JwtRequestFilter.class);
+        // Must run after JwtRequestFilter: stored responses are looked up by the authenticated user.
+        http.addFilterAfter(idempotencyFilter, RateLimitFilter.class);
 
         return http.build();
     }

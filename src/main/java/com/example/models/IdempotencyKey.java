@@ -4,7 +4,7 @@ import java.time.Instant;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "idempotency_keys")
+@Table(name = "idempotency_keys", uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "idempotency_key"}))
 public class IdempotencyKey {
 	
 	
@@ -12,7 +12,7 @@ public class IdempotencyKey {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "idempotency_key", nullable = false, unique = true)
+    @Column(name = "idempotency_key", nullable = false)
     private String idempotencyKey;
 
     @Column(name = "user_id", nullable = false)
