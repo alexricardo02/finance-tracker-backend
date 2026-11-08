@@ -64,7 +64,7 @@ class RedisCacheIT extends AbstractIntegrationTest {
         assertThat(redisTemplate.hasKey(aliceKey1)).isFalse();
         assertThat(redisTemplate.hasKey(aliceKey2)).isFalse();
 
-        // WHY: Bob's key must survive — proves the SCAN pattern (*alice*) only
+        // Bob's key must survive — proves the SCAN pattern (*::alice_*) only
         // matches Alice's tenant namespace and does NOT perform a global flush.
         assertThat(redisTemplate.hasKey(bobKey)).isTrue();
 

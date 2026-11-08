@@ -37,8 +37,8 @@ class CacheServiceTest {
     @Test
     void evictUserFinancialCache_scansAndDeletesOnlyTargetUserKeys() {
         String targetUser = "alex";
-        byte[] key1 = "cache_alex_1".getBytes();
-        byte[] key2 = "cache_alex_2".getBytes();
+        byte[] key1 = "incomes_month::alex_JULY".getBytes();
+        byte[] key2 = "expenses_day::alex_1".getBytes();
 
         when(redisTemplate.getConnectionFactory()).thenReturn(connectionFactory);
         when(connectionFactory.getConnection()).thenReturn(redisConnection);
@@ -55,7 +55,7 @@ class CacheServiceTest {
         cacheService.evictUserFinancialCache(targetUser);
 
         ScanOptions capturedOptions = optionsCaptor.getValue();
-        assertThat(capturedOptions.toOptionString()).containsPattern("\\*" + targetUser + "\\*");
+        assertThat(capturedOptions.toOptionString()).contains("*::" + targetUser + "_*");
 
         verify(redisConnection).del(key1);
         verify(redisConnection).del(key2);
@@ -63,6 +63,33 @@ class CacheServiceTest {
         // WHY: Cursor is a closeable resource representing an active TCP socket. 
         // Verifying closure prevents connection pool exhaustion in production.
         verify(cursor).close();
+    }
+
+    @Test
+    void evictUserFinancialCache_skipsKeysOutsideFinancialCaches() {
+        byte[] fxKey = "fx_rate::USD_EUR_2026-07-01".getBytes();
+
+        when(redisTemplate.getConnectionFactory()).thenReturn(connectionFactory);
+        when(connectionFactory.getConnection()).thenReturn(redisConnection);
+        when(redisConnection.scan(any(ScanOptions.class))).thenReturn(cursor);
+        when(cursor.hasNext()).thenReturn(true, false);
+        when(cursor.next()).thenReturn(fxKey);
+
+        cacheService.evictUserFinancialCache("USD");
+
+        verify(redisConnection, never()).del(any(byte[].class));
+    }
+
+    @Test
+    void evictUserFinancialCache_escapesGlobCharactersInUsername() {
+        ArgumentCaptor<ScanOptions> optionsCaptor = ArgumentCaptor.forClass(ScanOptions.class);
+        when(redisTemplate.getConnectionFactory()).thenReturn(connectionFactory);
+        when(connectionFactory.getConnection()).thenReturn(redisConnection);
+        when(redisConnection.scan(optionsCaptor.capture())).thenReturn(cursor);
+
+        cacheService.evictUserFinancialCache("a*b?");
+
+        assertThat(optionsCaptor.getValue().getPattern()).isEqualTo("*::a\\*b\\?_*");
     }
 
     @Test
