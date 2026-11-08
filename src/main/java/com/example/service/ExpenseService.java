@@ -23,6 +23,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import com.example.dataTransferObjects.ExpenseRequestDTO;
 import com.example.dataTransferObjects.ExpenseResponseDTO;
 import com.example.dataTransferObjects.PagedResponse;
+import com.example.exceptions.ForbiddenResourceException;
 import com.example.models.Category;
 import com.example.models.Expense;
 import com.example.models.PaymentMethod;
@@ -131,6 +132,7 @@ public class ExpenseService {
 
 	// @Cacheable(value = "user_expenses", key = "#username + '-' + #page + '-' +
 	// #size")
+	@Transactional(readOnly = true)
 	public PagedResponse<ExpenseResponseDTO> getExpensesForCurrentUserPaginated(String username, int page, int size) {
 
 		User user = userRepository.findByUsername(username)
@@ -161,6 +163,10 @@ public class ExpenseService {
 		Category category = categoryRepository.findById(requestDTO.getCategoryId())
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
 
+		if (!category.isUsableBy(username)) {
+			throw new ForbiddenResourceException("Not authorized to use this category");
+		}
+
 		Expense expense = new Expense();
 		expense.setExpenseAmount(requestDTO.getAmount());
 		expense.setCurrency(requestDTO.getCurrency());
@@ -183,12 +189,13 @@ public class ExpenseService {
 		return convertToResponseDTO(savedExpense);
 	}
 
+	@Transactional(readOnly = true)
 	public ExpenseResponseDTO getExpenseById(int id, String username) {
 		Expense expense = expenseRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Expense not found with ID: " + id));
 
 		if (!expense.getUser().getUsername().equals(username)) {
-			throw new SecurityException("No tienes permiso para ver este gasto");
+			throw new ForbiddenResourceException("No tienes permiso para ver este gasto");
 		}
 
 		return convertToResponseDTO(expense);
@@ -201,7 +208,7 @@ public class ExpenseService {
 				.orElseThrow(() -> new RuntimeException("Egreso no encontrado con ID: " + id));
 
 		if (!expense.getUser().getUsername().equals(username)) {
-			throw new SecurityException("No tienes permiso para eliminar este egreso");
+			throw new ForbiddenResourceException("No tienes permiso para eliminar este egreso");
 		}
 
 		expense.setDeletedAt(java.time.Instant.now());
@@ -218,11 +225,15 @@ public class ExpenseService {
 				.orElseThrow(() -> new IllegalArgumentException("Expense not found"));
 
 		if (!existingExpense.getUser().getUsername().equals(username)) {
-			throw new SecurityException("No tienes permiso para editar este gasto");
+			throw new ForbiddenResourceException("No tienes permiso para editar este gasto");
 		}
 
 		Category category = categoryRepository.findById(requestDTO.getCategoryId())
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
+
+		if (!category.isUsableBy(username)) {
+			throw new ForbiddenResourceException("Not authorized to use this category");
+		}
 
 		existingExpense.setExpenseAmount(requestDTO.getAmount());
 		existingExpense.setExpenseDate(requestDTO.getDate());

@@ -64,4 +64,9 @@ public class Category {
     public void setUser(User user) {
         this.user = user;
     }
+
+    // Global categories have no owner and are usable by everyone.
+    public boolean isUsableBy(String username) {
+        return user == null || user.getUsername().equals(username);
+    }
 }
