@@ -34,7 +34,7 @@ class IdempotencyKeyRepositoryTest {
         entityManager.persist(key);
         entityManager.flush();
 
-        Optional<IdempotencyKey> found = idempotencyKeyRepository.findByIdempotencyKey("uuid-12345");
+        Optional<IdempotencyKey> found = idempotencyKeyRepository.findByUserIdAndIdempotencyKey(1, "uuid-12345");
 
         assertThat(found).isPresent();
         assertThat(found.get().getResponseStatus()).isEqualTo(200);
@@ -67,7 +67,7 @@ class IdempotencyKeyRepositoryTest {
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(idempotencyKeyRepository.findByIdempotencyKey("old-key")).isEmpty();
-        assertThat(idempotencyKeyRepository.findByIdempotencyKey("new-key")).isPresent();
+        assertThat(idempotencyKeyRepository.findByUserIdAndIdempotencyKey(1, "old-key")).isEmpty();
+        assertThat(idempotencyKeyRepository.findByUserIdAndIdempotencyKey(1, "new-key")).isPresent();
     }
 }

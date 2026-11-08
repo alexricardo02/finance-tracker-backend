@@ -17,6 +17,7 @@ import com.example.repository.CategoryRepository;
 import com.example.repository.ExpenseRepository;
 import com.example.repository.UserRepository;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -178,6 +179,27 @@ class ExpenseServiceTest {
         ExpenseResponseDTO result = expenseService.updateExpense(20, dto, "john");
 
         assertThat(result).isNotNull();
+    }
+
+    @Disabled("BUG-9: updateExpense does not store the new currency")
+    @Test
+    void updateExpense_newCurrency_storesCurrencyAndConvertedAmount() {
+        ExpenseRequestDTO dto = new ExpenseRequestDTO();
+        dto.setAmount(200.0);
+        dto.setCurrency("EUR");
+        dto.setDate(LocalDate.of(2026, 8, 1));
+        dto.setCategoryId(1);
+        dto.setPaymentMethod(PaymentMethod.CASH);
+
+        when(expenseRepository.findById(20)).thenReturn(Optional.of(expense));
+        when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
+        when(exchangeRateService.getConversionRate("EUR", "USD", LocalDate.of(2026, 8, 1))).thenReturn(1.5);
+        when(expenseRepository.save(any(Expense.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ExpenseResponseDTO result = expenseService.updateExpense(20, dto, "john");
+
+        assertThat(result.getCurrency()).isEqualTo("EUR");
+        assertThat(result.getAmountPrimaryCurrency()).isEqualTo(300.0);
     }
 
     @Test

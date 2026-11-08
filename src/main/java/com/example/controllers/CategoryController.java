@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -65,6 +66,8 @@ public class CategoryController {
                 .body(new CategoryDTO(savedCategory.getCategoryId(), savedCategory.getName(), savedCategory.getType()));
     }
     
+    // The ownership check reads the lazy Category.user, and open-in-view is off.
+    @Transactional
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCategory(@PathVariable Integer id) {
         Category category = categoryRepository.findById(id)

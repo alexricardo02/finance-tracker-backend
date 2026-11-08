@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.example.dataTransferObjects.IncomeRequestDTO;
 import com.example.dataTransferObjects.IncomeResponseDTO;
 import com.example.dataTransferObjects.PagedResponse;
+import com.example.exceptions.ForbiddenResourceException;
 import com.example.models.Category;
 import com.example.models.Income;
 import com.example.models.PaymentMethod;
@@ -140,6 +141,10 @@ public class IncomeService {
 		Category category = categoryRepository.findById(requestDTO.getCategoryId())
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
 
+		if (!category.isUsableBy(username)) {
+			throw new ForbiddenResourceException("Not authorized to use this category");
+		}
+
 		Income income = new Income();
 		income.setAmount(requestDTO.getAmount());
 		income.setCurrency(requestDTO.getCurrency());
@@ -169,6 +174,7 @@ public class IncomeService {
 
 	// @Cacheable(value = "user_incomes", key = "#username + '-' + #page + '-' +
 	// #size")
+	@Transactional(readOnly = true)
 	public PagedResponse<IncomeResponseDTO> getIncomesForCurrentUserPaginated(String username, int page, int size) {
 
 		User user = userRepository.findByUsername(username)
@@ -185,13 +191,14 @@ public class IncomeService {
 				incomesPage.getTotalElements(), incomesPage.getTotalPages(), incomesPage.isLast());
 	}
 
+	@Transactional(readOnly = true)
 	public IncomeResponseDTO getIncomeById(Integer id, String username) {
 
 		Income income = incomeRepository.findById(id)
 				.orElseThrow(() -> new EntityNotFoundException("Income not found with ID: " + id));
 
 		if (!income.getUser().getUsername().equals(username)) {
-			throw new SecurityException("No tienes permiso para ver este ingreso");
+			throw new ForbiddenResourceException("No tienes permiso para ver este ingreso");
 		}
 
 		return convertToResponseDTO(income);
@@ -204,7 +211,7 @@ public class IncomeService {
 	            .orElseThrow(() -> new RuntimeException("Ingreso no encontrado con ID: " + id));
 
 	    if (!income.getUser().getUsername().equals(username)) {
-	        throw new SecurityException("No tienes permiso para eliminar este ingreso");
+	        throw new ForbiddenResourceException("No tienes permiso para eliminar este ingreso");
 	    }
 
 	    income.setDeletedAt(java.time.Instant.now());
@@ -220,11 +227,15 @@ public class IncomeService {
 				.orElseThrow(() -> new RuntimeException("Ingreso no encontrado con ID: " + incomeId));
 
 		if (!existingIncome.getUser().getUsername().equals(username)) {
-			throw new SecurityException("No tienes permiso para editar este ingreso");
+			throw new ForbiddenResourceException("No tienes permiso para editar este ingreso");
 		}
 
 		Category category = categoryRepository.findById(incomeRequestDTO.getCategoryId())
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
+
+		if (!category.isUsableBy(username)) {
+			throw new ForbiddenResourceException("Not authorized to use this category");
+		}
 
 		existingIncome.setAmount(incomeRequestDTO.getAmount());
 		existingIncome.setDate(incomeRequestDTO.getDate());
@@ -245,6 +256,7 @@ public class IncomeService {
 
 	}
 
+	@Transactional(readOnly = true)
 	public List<IncomeResponseDTO> findByIncomeTypeName(String incomeType, String username) {
 
 		List<Income> incomes = incomeRepository.findByIncomeTypeNameAndUser(incomeType, getUserIdByUsername(username));

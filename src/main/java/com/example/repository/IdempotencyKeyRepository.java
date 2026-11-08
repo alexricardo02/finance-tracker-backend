@@ -9,6 +9,6 @@ import java.util.Optional;
 
 @Repository
 public interface IdempotencyKeyRepository extends JpaRepository<IdempotencyKey, Integer> {
-    Optional<IdempotencyKey> findByIdempotencyKey(String idempotencyKey);
+    Optional<IdempotencyKey> findByUserIdAndIdempotencyKey(Integer userId, String idempotencyKey);
     void deleteByCreatedAtBefore(Instant cutoff);
 }

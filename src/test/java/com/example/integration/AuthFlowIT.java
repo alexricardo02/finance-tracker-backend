@@ -107,9 +107,7 @@ class AuthFlowIT extends AbstractIntegrationTest {
                 HttpMethod.POST,
                 new HttpEntity<>(oldRefreshHeaders),
                 String.class);
-        // The old token was rotated, so it no longer exists in the DB → 5xx or 401
-        assertThat(reuseOldResp.getStatusCode().is5xxServerError()
-                || reuseOldResp.getStatusCode() == HttpStatus.UNAUTHORIZED).isTrue();
+        assertThat(reuseOldResp.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
 
         // ── 6. Logout — blacklist the access token ────────────────────────────
         HttpHeaders logoutHeaders = new HttpHeaders();
@@ -132,8 +130,7 @@ class AuthFlowIT extends AbstractIntegrationTest {
                 HttpMethod.GET,
                 new HttpEntity<>(blacklistedHeaders),
                 String.class);
-        assertThat(afterLogoutResp.getStatusCode() == HttpStatus.UNAUTHORIZED
-                || afterLogoutResp.getStatusCode() == HttpStatus.FORBIDDEN).isTrue();
+        assertThat(afterLogoutResp.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
