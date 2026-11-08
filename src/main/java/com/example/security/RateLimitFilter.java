@@ -6,10 +6,13 @@ import io.github.bucket4j.BucketConfiguration;
 import io.github.bucket4j.distributed.proxy.ProxyManager;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -23,6 +26,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
 	@Autowired
 	private ProxyManager<byte[]> proxyManager;
+
+	@Value("${app.rate-limit.trusted-proxies:1}")
+	private int trustedProxies = 1;
 	
 	private Supplier<BucketConfiguration> getConfigSupplierForForgotPassword() {
 	    return () -> {
@@ -52,7 +58,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 	            prefix = "register_limit:";
 	            rateLimitId = getClientIP(request);
 	        } else if (uri.equals("/api/users/refresh")) {
-	            // NEW: without this, /refresh could be hit without any limit
+	            // Without this, /refresh could be hit without any limit
 	            configSupplier = getConfigSupplierForRefresh();
 	            prefix = "refresh_limit:";
 	            rateLimitId = getClientIP(request);
@@ -138,12 +144,25 @@ public class RateLimitFilter extends OncePerRequestFilter {
 		};
 	}
 
+	// Clients can send any X-Forwarded-For, so only the entries appended by our own proxies can be trusted:
+	// the client address is the one just before them. ForwardedHeaderFilter removes the header and exposes the
+	// spoofable leftmost entry as the remote address, so both values are read from the original request.
 	private String getClientIP(HttpServletRequest request) {
-		String xfHeader = request.getHeader("X-Forwarded-For");
-		if (xfHeader == null || xfHeader.isEmpty() || "unknown".equalsIgnoreCase(xfHeader)) {
-			return request.getRemoteAddr();
+		HttpServletRequest original = unwrap(request);
+		String forwardedFor = original.getHeader("X-Forwarded-For");
+		if (trustedProxies <= 0 || forwardedFor == null || forwardedFor.isBlank()) {
+			return original.getRemoteAddr();
 		}
-		return xfHeader.split(",")[0].trim(); // Extract the user's real IP address
+		String[] hops = forwardedFor.split(",");
+		return hops[Math.max(0, hops.length - trustedProxies)].trim();
+	}
+
+	private HttpServletRequest unwrap(HttpServletRequest request) {
+		ServletRequest current = request;
+		while (current instanceof ServletRequestWrapper wrapper) {
+			current = wrapper.getRequest();
+		}
+		return (HttpServletRequest) current;
 	}
 
 }

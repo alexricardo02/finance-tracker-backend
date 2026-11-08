@@ -8,8 +8,10 @@ import io.github.resilience4j.retry.annotation.Retry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.Map;
@@ -18,6 +20,7 @@ import java.util.Map;
 public class ExchangeRateService {
 
     private static final Logger log = LoggerFactory.getLogger(ExchangeRateService.class);
+    private static final double FRANKFURTER_FALLBACK_RATE = 1.0;
     private final RestClient dolarApiClient;
     private final RestClient frankfurterClient;
     
@@ -65,7 +68,9 @@ public class ExchangeRateService {
      * whole history later (e.g. on primary-currency change) stays accurate,
      * instead of applying today's rate to old transactions.
      */
-    @Cacheable(value = "fx_rate", key = "#fromCurrency + '_' + #toCurrency + '_' + #date")
+    // Results of 1.0 are not cached because they may be the Frankfurter fallback, which would otherwise
+    // outlive the outage. A real 1.0 rate only costs an extra lookup.
+    @Cacheable(value = "fx_rate", key = "#fromCurrency + '_' + #toCurrency + '_' + #date", unless = "#result == 1.0")
     public double getConversionRate(String fromCurrency, String toCurrency, LocalDate date) {
         if (fromCurrency == null || toCurrency == null || fromCurrency.equalsIgnoreCase(toCurrency)) {
             return 1.0;
@@ -80,17 +85,34 @@ public class ExchangeRateService {
     // an accepted limitation for ARS pairs specifically. Every other pair uses
     // Frankfurter's historical ECB data.
     private double getRateViaArsBridge(String fromCurrency, String toCurrency, LocalDate date) {
-        double arsPerUsd = self.getOficialRate().getVenta();
+        Double venta = self.getOficialRate().getVenta();
+        // A no-op rate is tolerable between hard currencies but would be off by about 1000x for ARS,
+        // and the DolarAPI fallback's zero would store Infinity, so the conversion is refused instead.
+        if (venta == null || venta <= 0) {
+            throw exchangeRateUnavailable();
+        }
+        double arsPerUsd = venta;
         if ("ARS".equalsIgnoreCase(fromCurrency) && "USD".equalsIgnoreCase(toCurrency)) return 1.0 / arsPerUsd;
         if ("USD".equalsIgnoreCase(fromCurrency) && "ARS".equalsIgnoreCase(toCurrency)) return arsPerUsd;
 
         if ("ARS".equalsIgnoreCase(fromCurrency)) {
-            double usdToTarget = self.getRateFromFrankfurter("USD", toCurrency, date);
+            double usdToTarget = requireRealRate(self.getRateFromFrankfurter("USD", toCurrency, date));
             return (1.0 / arsPerUsd) * usdToTarget;
         } else {
-            double sourceToUsd = self.getRateFromFrankfurter(fromCurrency, "USD", date);
+            double sourceToUsd = requireRealRate(self.getRateFromFrankfurter(fromCurrency, "USD", date));
             return sourceToUsd * arsPerUsd;
         }
+    }
+
+    private double requireRealRate(double rate) {
+        if (rate == FRANKFURTER_FALLBACK_RATE) {
+            throw exchangeRateUnavailable();
+        }
+        return rate;
+    }
+
+    private ResponseStatusException exchangeRateUnavailable() {
+        return new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Exchange rate temporarily unavailable");
     }
 
     @CircuitBreaker(name = "exchangeRate", fallbackMethod = "getRateFromFrankfurterFallback")
@@ -113,6 +135,6 @@ public class ExchangeRateService {
 	 public double getRateFromFrankfurterFallback(String fromCurrency, String toCurrency, LocalDate date, Throwable t) {
 	     log.warn("Circuit breaker OPEN para Frankfurter ({} -> {}). Fallback = 1.0. Causa: {}",
 	             fromCurrency, toCurrency, t.getMessage());
-	     return 1.0;
+	     return FRANKFURTER_FALLBACK_RATE;
 	 }
 }

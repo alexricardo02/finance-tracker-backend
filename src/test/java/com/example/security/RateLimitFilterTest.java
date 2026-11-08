@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.util.ReflectionTestUtils;
 import java.util.function.Supplier;
 import org.springframework.http.HttpStatus;
 import java.io.PrintWriter;
@@ -22,6 +23,7 @@ import io.github.bucket4j.distributed.BucketProxy;
 import java.io.StringWriter;
 import java.util.List;
 
+import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -122,5 +124,43 @@ class RateLimitFilterTest {
 
         verifyNoInteractions(proxyManager);
         verify(chain).doFilter(request, response);
+    }
+
+    private void loginWithForwardedFor(String forwardedFor, String expectedClient) throws Exception {
+        when(request.getMethod()).thenReturn("POST");
+        when(request.getRequestURI()).thenReturn("/api/users/login");
+        when(request.getHeader("X-Forwarded-For")).thenReturn(forwardedFor);
+        stubBucket(true);
+
+        filter.doFilterInternal(request, response, chain);
+
+        verify(bucketBuilder).build(aryEq(("login_limit:" + expectedClient).getBytes()), any(Supplier.class));
+    }
+
+    @Test
+    void doFilter_forwardedFor_usesEntryAddedByTrustedProxy() throws Exception {
+        loginWithForwardedFor("10.9.9.9, 198.51.100.7", "198.51.100.7");
+    }
+
+    @Test
+    void doFilter_forwardedForWithTwoTrustedProxies_skipsBothProxyHops() throws Exception {
+        ReflectionTestUtils.setField(filter, "trustedProxies", 2);
+
+        loginWithForwardedFor("10.9.9.9, 198.51.100.7, 203.0.113.1", "198.51.100.7");
+    }
+
+    @Test
+    void doFilter_fewerHopsThanTrustedProxies_usesLeftmostEntry() throws Exception {
+        ReflectionTestUtils.setField(filter, "trustedProxies", 2);
+
+        loginWithForwardedFor("198.51.100.7", "198.51.100.7");
+    }
+
+    @Test
+    void doFilter_noTrustedProxies_ignoresHeaderAndUsesPeerAddress() throws Exception {
+        ReflectionTestUtils.setField(filter, "trustedProxies", 0);
+        when(request.getRemoteAddr()).thenReturn("203.0.113.1");
+
+        loginWithForwardedFor("10.9.9.9", "203.0.113.1");
     }
 }

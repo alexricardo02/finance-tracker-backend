@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.Map;
@@ -136,5 +137,52 @@ class ExchangeRateServiceTest {
                 "EUR", "USD", LocalDate.now(), new RuntimeException("timeout"));
 
         assertThat(result).isEqualTo(1.0);
+    }
+
+    @Test
+    void getConversionRate_arsToEur_bridgesThroughUsd() {
+        mockDolarApi(1000.0);
+        mockFrankfurter(0.5, "EUR");
+
+        double rate = exchangeRateService.getConversionRate("ARS", "EUR", LocalDate.of(2026, 7, 1));
+
+        assertThat(rate).isEqualTo(0.0005);
+    }
+
+    @Test
+    void getConversionRate_eurToArs_bridgesThroughUsd() {
+        mockDolarApi(1000.0);
+        mockFrankfurter(2.0, "USD");
+
+        double rate = exchangeRateService.getConversionRate("EUR", "ARS", LocalDate.of(2026, 7, 1));
+
+        assertThat(rate).isEqualTo(2000.0);
+    }
+
+    @Test
+    void getConversionRate_currencyCodesDifferInCase_returnsOne_noNetworkCall() {
+        assertThat(exchangeRateService.getConversionRate("usd", "USD", LocalDate.of(2026, 7, 1))).isEqualTo(1.0);
+        verifyNoInteractions(frankfurterClient, dolarApiClient);
+    }
+
+    @Test
+    void getConversionRate_arsWithZeroVenta_refusesInsteadOfReturningInfinityOrZero() {
+        mockDolarApi(0.0);
+        LocalDate date = LocalDate.of(2026, 7, 1);
+
+        assertThatThrownBy(() -> exchangeRateService.getConversionRate("ARS", "USD", date))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        e -> assertThat(e.getStatusCode().value()).isEqualTo(503));
+        assertThatThrownBy(() -> exchangeRateService.getConversionRate("USD", "ARS", date))
+                .isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
+    void getConversionRate_arsBridgeWithFrankfurterFallbackRate_refuses() {
+        mockDolarApi(1000.0);
+        mockFrankfurter(1.0, "EUR");
+
+        assertThatThrownBy(() -> exchangeRateService.getConversionRate("ARS", "EUR", LocalDate.of(2026, 7, 1)))
+                .isInstanceOf(ResponseStatusException.class);
     }
 }
