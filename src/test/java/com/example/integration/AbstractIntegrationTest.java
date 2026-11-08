@@ -1,15 +1,30 @@
 package com.example.integration;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.redis.testcontainers.RedisContainer;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.convention.TestBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.web.client.RestClient;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
+
+import java.time.Duration;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 
 /**
  * Base class for all integration tests.
@@ -32,6 +47,8 @@ import org.testcontainers.utility.DockerImageName;
  * that H2 does not implement identically — an H2 integration test would give
  * false confidence.
  */
+// Spring Boot disables metrics export in tests by default, which would hide /actuator/prometheus.
+@AutoConfigureObservability(tracing = false)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public abstract class AbstractIntegrationTest {
 
@@ -52,6 +69,56 @@ public abstract class AbstractIntegrationTest {
         POSTGRES.start();
         RABBIT.start();
         REDIS.start();
+    }
+
+    // One static server shared by all ITs: a per-class server would change the bean
+    // overrides below and break the single cached ApplicationContext.
+    protected static final WireMockServer FX_API =
+            new WireMockServer(WireMockConfiguration.options().dynamicPort());
+
+    static {
+        FX_API.start();
+    }
+
+    @TestBean(name = "dolarApiClient", methodName = "stubbedFxClient")
+    private RestClient dolarApiClient;
+
+    @TestBean(name = "frankfurterClient", methodName = "stubbedFxClient")
+    private RestClient frankfurterClient;
+
+    @MockitoBean
+    protected JavaMailSender mailSender;
+
+    @Autowired
+    private CircuitBreakerRegistry circuitBreakerRegistry;
+
+    // The production clients have no read timeout, so the stub sets one to keep a
+    // delayed response from hanging the suite.
+    static RestClient stubbedFxClient() {
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory();
+        requestFactory.setReadTimeout(Duration.ofSeconds(1));
+        return RestClient.builder().baseUrl(FX_API.baseUrl()).requestFactory(requestFactory).build();
+    }
+
+    protected static void stubDolarOficial(double venta) {
+        FX_API.stubFor(get(urlPathEqualTo("/v1/dolares/oficial")).willReturn(okJson(
+                "{\"compra\":" + (venta - 10) + ",\"venta\":" + venta
+                        + ",\"casa\":\"oficial\",\"fechaActualizacion\":\"2026-07-01T00:00:00Z\"}")));
+    }
+
+    protected static void stubFrankfurter(String from, String to, String date, double rate) {
+        FX_API.stubFor(get(urlPathEqualTo("/v1/" + date))
+                .withQueryParam("base", com.github.tomakehurst.wiremock.client.WireMock.equalTo(from))
+                .withQueryParam("symbols", com.github.tomakehurst.wiremock.client.WireMock.equalTo(to))
+                .willReturn(okJson("{\"rates\":{\"" + to + "\":" + rate + "}}")));
+    }
+
+    // The breaker is a singleton in the shared context, so failures in one test would
+    // otherwise short-circuit calls in the next.
+    @BeforeEach
+    void resetFxStubs() {
+        FX_API.resetAll();
+        circuitBreakerRegistry.circuitBreaker("exchangeRate").reset();
     }
 
     @Autowired(required = false)

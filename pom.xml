@@ -200,6 +200,13 @@
 			<version>2.2.2</version>
 			<scope>test</scope>
 		</dependency>
+		<!-- Stubs DolarAPI and Frankfurter over real HTTP in integration tests -->
+		<dependency>
+			<groupId>org.wiremock</groupId>
+			<artifactId>wiremock-standalone</artifactId>
+			<version>3.10.0</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -209,10 +216,29 @@
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
 			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.12</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
-					<argLine>-XX:+EnableDynamicAgentLoading -Dapi.version=1.44</argLine>
+					<argLine>@{argLine} -XX:+EnableDynamicAgentLoading -Dapi.version=1.44</argLine>
 					<systemPropertyVariables>
 						<api.version>1.44</api.version>
 					</systemPropertyVariables>
@@ -234,7 +260,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<argLine>-XX:+EnableDynamicAgentLoading -Dapi.version=1.44</argLine>
+					<argLine>@{argLine} -XX:+EnableDynamicAgentLoading -Dapi.version=1.44</argLine>
 					<systemPropertyVariables>
 						<api.version>1.44</api.version>
 					</systemPropertyVariables>

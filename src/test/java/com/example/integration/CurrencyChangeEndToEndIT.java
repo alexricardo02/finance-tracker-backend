@@ -73,6 +73,8 @@ class CurrencyChangeEndToEndIT extends AbstractIntegrationTest {
         assertThat(initialIncomes).hasSize(1);
         assertThat(initialIncomes.get(0).getAmountPrimaryCurrency()).isEqualTo(100.0);
 
+        stubFrankfurter("USD", "EUR", "2026-07-01", 0.9);
+
         // ── 4. Change primary currency to EUR ────────────────────────────────
         // WHY: SettingsService directly invokes PrimaryCurrencyChangedListener.recalculate()
         // in addition to publishing an outbox event; the listener also listens to RabbitMQ.
@@ -95,10 +97,7 @@ class CurrencyChangeEndToEndIT extends AbstractIntegrationTest {
         await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             List<Income> updatedIncomes = findIncomesForUser(reg.getUsername());
             assertThat(updatedIncomes).hasSize(1);
-            // The recalculated amount must differ from the original 100.0 (unless USD=EUR=1, which is unlikely)
-            // OR be exactly 100.0 if the exchange-rate service fallback returns 1.0.
-            // We assert it was touched by checking the value is not null and save was called.
-            assertThat(updatedIncomes.get(0).getAmountPrimaryCurrency()).isNotNull();
+            assertThat(updatedIncomes.get(0).getAmountPrimaryCurrency()).isEqualTo(90.0);
         });
     }
 
