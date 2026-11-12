@@ -18,26 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: whatulookingfor
-          POSTGRES_DB: finance_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
@@ -67,14 +47,6 @@ jobs:
         echo "No GPL/AGPL dependencies detected."
 
     - name: Build and Test with Maven
-      env:
-        DB_URL: jdbc:postgresql://localhost:5432/finance_db
-        DB_USERNAME: postgres
-        DB_PASSWORD: whatulookingfor
-        JWT_SECRET: super_secret_test_key_for_github_actions_only
-        REDIS_HOST: localhost
-        REDIS_PORT: 6379
-        REDIS_PASSWORD: ""
       run: mvn clean verify
 
   codeql:

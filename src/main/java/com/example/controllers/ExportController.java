@@ -20,7 +20,7 @@ import java.util.Set;
 @RequestMapping("/api/exports")
 public class ExportController {
 
-    // H-4 fix: allowlist of accepted format values.
+    // Allowlist of accepted format values.
     // The format value goes directly into the Content-Disposition filename and
     // into a switch-expression used to resolve the MediaType.
     // Without validation, a crafted value like "csv%0d%0aX-Evil: hdr" would
@@ -44,7 +44,7 @@ public class ExportController {
             @RequestParam(required = false) PaymentMethod paymentMethod,
             @RequestParam(defaultValue = "ALL") String kind) throws IOException {
 
-        // H-4 fix: reject any format not on the allowlist before it touches a header
+        // Reject any format not on the allowlist before it touches a header
         String safeFormat = format.toLowerCase();
         if (!ALLOWED_FORMATS.contains(safeFormat)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,

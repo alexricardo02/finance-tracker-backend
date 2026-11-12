@@ -2,6 +2,8 @@ package com.example.config;
 
 import com.example.models.Category;
 import com.example.repository.CategoryRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -11,6 +13,8 @@ import java.util.List;
 
 @Component
 public class CategorySeeder implements CommandLineRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(CategorySeeder.class);
 
     @Autowired
     private CategoryRepository categoryRepository;
@@ -22,7 +26,7 @@ public class CategorySeeder implements CommandLineRunner {
         List<Category> globalCategories = categoryRepository.findByUserIsNull();
         
         if (globalCategories.isEmpty()) {
-            System.out.println("Seeding default categories into the database...");
+            log.info("Seeding default categories into the database...");
             
             List<Category> defaults = Arrays.asList(
                 new Category("Salary", "income", null),
@@ -40,7 +44,7 @@ public class CategorySeeder implements CommandLineRunner {
             );
             
             categoryRepository.saveAll(defaults);
-            System.out.println("Default categories created successfully.");
+            log.info("Default categories created successfully.");
         }
     }
 }

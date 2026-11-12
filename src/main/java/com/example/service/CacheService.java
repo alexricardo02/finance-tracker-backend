@@ -15,7 +15,7 @@ public class CacheService {
     @Autowired
     private StringRedisTemplate redisTemplate;
 
-    // WHY: Programmatic eviction allows pattern-matching, preventing global cache wipes (allEntries=true)
+    // Programmatic eviction allows pattern-matching, preventing global cache wipes (allEntries=true)
     // and ensuring tenant isolation in a shared Redis instance.
     // Financial cache keys look like "incomes_month::alice_JULY". The pattern is anchored to that shape so
     // it cannot reach rate-limit buckets or the JWT blacklist in the same Redis. Usernames are unrestricted,
@@ -31,7 +31,7 @@ public class CacheService {
                          }
                      }
                  } finally {
-                     connection.close(); // Retorna la conexión al pool para evitar fugas de memoria
+                     connection.close(); // Return the connection to the pool to avoid leaks
                  }
     }
     
@@ -44,7 +44,7 @@ public class CacheService {
         return name.startsWith("incomes_") || name.startsWith("expenses_");
     }
 
- // WHY: Explicitly target global dictionary keys that don't contain a username
+ // Explicitly target global dictionary keys that don't contain a username
     public void evictGlobalCache(String cacheName, String key) {
         redisTemplate.delete(cacheName + "::" + key);
     }

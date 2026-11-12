@@ -93,7 +93,7 @@ public class IncomeService {
 		Specification<Income> spec = (root, query, cb) -> {
 			List<Predicate> predicates = new ArrayList<>();
 
-			// WHY: Links the transaction to the principal.getName() passed from the
+			// Links the transaction to the principal.getName() passed from the
 			// controller
 			predicates.add(cb.equal(root.get("user").get("username"), username));
 
@@ -115,7 +115,7 @@ public class IncomeService {
 
 		Page<IncomeResponseDTO> incomesPage = incomeRepository.findAll(spec, pageable).map(this::convertToResponseDTO);
 
-		// WHY: Explicitly matching the exact 6-parameter constructor of PagedResponse
+		// Explicitly matching the exact 6-parameter constructor of PagedResponse
 		// resolves
 		// the generic inference failure and maps all pagination metadata accurately.
 		return new PagedResponse<>(incomesPage.getContent(), incomesPage.getNumber(), incomesPage.getSize(),
@@ -156,8 +156,6 @@ public class IncomeService {
 		User user = userRepository.findByUsername(username)
 				.orElseThrow(() -> new EntityNotFoundException("User not found"));
 		income.setUser(user);
-
-		System.out.println("LOG: El ID de ese usuario en la DB es: " + user.getUserId());
 
 		income.setUser(user);
 		String primaryCurrency = user.getPrimaryCurrency();

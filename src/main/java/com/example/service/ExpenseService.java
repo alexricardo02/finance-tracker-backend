@@ -94,7 +94,7 @@ public class ExpenseService {
 		Specification<Expense> spec = (root, query, cb) -> {
 			List<Predicate> predicates = new ArrayList<>();
 
-			// WHY: Links the transaction to the principal.getName() passed from the
+			// Links the transaction to the principal.getName() passed from the
 			// controller
 			predicates.add(cb.equal(root.get("user").get("username"), username));
 
@@ -117,7 +117,7 @@ public class ExpenseService {
 		Page<ExpenseResponseDTO> expensesPage = expenseRepository.findAll(spec, pageable)
 				.map(this::convertToResponseDTO);
 
-		// WHY: Explicitly matching the exact 6-parameter constructor of PagedResponse
+		// Explicitly matching the exact 6-parameter constructor of PagedResponse
 		// resolves
 		// the generic inference failure and maps all pagination metadata accurately.
 		return new PagedResponse<>(expensesPage.getContent(), expensesPage.getNumber(), expensesPage.getSize(),

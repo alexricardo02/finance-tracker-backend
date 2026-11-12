@@ -20,7 +20,7 @@ import java.util.Set;
 @Service
 public class SettingsService {
 
-    // WHY: whitelist avoids storing garbage currency codes that would break FX lookups
+    // Whitelist avoids storing garbage currency codes that would break FX lookups
     private static final Set<String> SUPPORTED_CURRENCIES = Set.of("USD", "EUR", "GBP", "ARS", "JPY");
 
     @Autowired private UserRepository userRepository;

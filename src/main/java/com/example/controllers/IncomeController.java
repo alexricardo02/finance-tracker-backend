@@ -51,14 +51,14 @@ public class IncomeController {
     public ResponseEntity<PagedResponse<IncomeResponseDTO>> getAllIncomes(
             Principal principal, 
             @RequestParam(value= "page", defaultValue = "0", required = false) int page, 
-            // WHY: Increased size to ensure the statistics page aggregates the full period, not just the first 20 rows.
+            // Increased size to ensure the statistics page aggregates the full period, not just the first 20 rows.
             @RequestParam(value = "size", defaultValue = "1000", required = false) int size, 
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) PaymentMethod paymentMethod) {
         
-        // WHY: We use a new service method that understands dynamic filtering via Specifications
+        // We use a new service method that understands dynamic filtering via Specifications
     	PagedResponse<IncomeResponseDTO> response = incomeService.getFilteredIncomes(
                 principal.getName(), startDate, endDate, categoryId, paymentMethod, page, size
         );
