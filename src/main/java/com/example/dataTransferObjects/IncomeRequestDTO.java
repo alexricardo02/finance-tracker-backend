@@ -27,7 +27,7 @@ public class IncomeRequestDTO {
 	@NotNull(message = "Payment method is mandatory")
     private PaymentMethod paymentMethod;
     
-    // H-3 fix: removed userId field.
+    // No userId field on purpose.
     // The client MUST NOT supply a userId — it would allow any authenticated user to claim
     // another user's ID (Broken Object Level Authorization / IDOR).
     // The owning user is always resolved from Principal.getName() in the controller,

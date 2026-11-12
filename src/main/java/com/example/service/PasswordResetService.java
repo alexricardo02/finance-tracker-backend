@@ -40,7 +40,7 @@ public class PasswordResetService {
 
             emailService.sendPasswordResetEmail(user.getEmail(), resetToken.getToken());
         }, () -> log.info("Password reset requested for a non-existent email"));
-        // WHY: no exception/branching on "not found" — avoids leaking which emails are registered
+        // No exception/branching on "not found" — avoids leaking which emails are registered
     }
 
     @Transactional
@@ -58,7 +58,7 @@ public class PasswordResetService {
         userRepository.save(user);
 
         passwordResetTokenRepository.delete(resetToken);
-        // WHY: invalidate existing sessions so a leaked/old session can't survive a password reset
+        // Invalidate existing sessions so a leaked/old session can't survive a password reset
         refreshTokenRepository.deleteByUser(user);
     }
 }

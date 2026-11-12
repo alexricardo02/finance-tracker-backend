@@ -12,7 +12,7 @@ public class LoginResponseDTO {
         this.profile = profile;
     }
 
-    // Getters y Setters
+    // Getters and setters
     public String getToken() { return token; }
     public void setToken(String token) { this.token = token; }
 

@@ -1,5 +1,9 @@
 package com.example.config;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.example.models.OutboxEvent;
 import com.example.repository.OutboxEventRepository;
 import org.junit.jupiter.api.Test;
@@ -7,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.util.List;
@@ -84,5 +89,30 @@ class OutboxRelayJobTest {
         assertThat(succeeding.isProcessed()).isTrue();
         verify(outboxEventRepository, times(1)).save(succeeding);
         verify(outboxEventRepository, never()).save(failing);
+    }
+
+    @Test
+    void processOutboxEvents_rabbitThrows_logsWarningWithEventIdAndCause() {
+        OutboxEvent event = new OutboxEvent("PRIMARY_CURRENCY_CHANGED", "{\"userId\":1}");
+        event.setId(42L);
+        RuntimeException cause = new RuntimeException("broker unreachable");
+        when(outboxEventRepository.findByProcessedFalseOrderByCreatedAtAsc()).thenReturn(List.of(event));
+        doThrow(cause).when(rabbitTemplate).convertAndSend(anyString(), anyString(), anyString());
+
+        Logger logger = (Logger) LoggerFactory.getLogger(OutboxRelayJob.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            outboxRelayJob.processOutboxEvents();
+        } finally {
+            logger.detachAppender(appender);
+        }
+
+        assertThat(appender.list).singleElement().satisfies(log -> {
+            assertThat(log.getLevel()).isEqualTo(Level.WARN);
+            assertThat(log.getFormattedMessage()).contains("42");
+            assertThat(log.getThrowableProxy().getMessage()).isEqualTo("broker unreachable");
+        });
     }
 }

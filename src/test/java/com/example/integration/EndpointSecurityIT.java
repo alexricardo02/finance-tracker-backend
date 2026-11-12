@@ -6,9 +6,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.util.Map;
 import java.util.stream.Stream;
@@ -19,6 +22,8 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 class EndpointSecurityIT extends AbstractApiIntegrationTest {
 
     private static final String ALLOWED_ORIGIN = "http://localhost:3000";
+
+    @Autowired private ApplicationContext context;
 
     static Stream<Arguments> protectedEndpoints() {
         return Stream.of(
@@ -188,5 +193,11 @@ class EndpointSecurityIT extends AbstractApiIntegrationTest {
     private ResponseEntity<String> preflight(String origin, String requestedMethod) {
         return call(HttpMethod.OPTIONS, "/api/incomes", null, null,
                 Map.of(HttpHeaders.ORIGIN, origin, HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, requestedMethod));
+    }
+
+    // Boot would otherwise register an in-memory user with a generated password and log it at startup.
+    @Test
+    void applicationContext_jwtOnlyAuthentication_hasNoUserDetailsService() {
+        assertThat(context.getBeansOfType(UserDetailsService.class)).isEmpty();
     }
 }

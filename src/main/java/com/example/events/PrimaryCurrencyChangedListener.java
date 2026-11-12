@@ -27,7 +27,7 @@ public class PrimaryCurrencyChangedListener {
     @Autowired private ExchangeRateService exchangeRateService;
     @Autowired private CacheService cacheService;
 
-    // WHY: recalculation runs in the background so the settings request returns
+    // Recalculation runs in the background so the settings request returns
     // instantly. Each transaction is reconverted using the FX rate of ITS OWN
     // date, not today's rate, so historical totals stay accurate.
     @RabbitListener(queues = RabbitMQConfig.CURRENCY_QUEUE)

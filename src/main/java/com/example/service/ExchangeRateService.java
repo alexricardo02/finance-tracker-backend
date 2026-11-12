@@ -51,7 +51,7 @@ public class ExchangeRateService {
         }
     }
     
- // Fallback: NO tirar 500. Devuelve el último valor válido o un valor conservador.
+ // Fallback: never return a 500; return a conservative placeholder rate instead.
     public ExchangeRateResponseDTO getOficialRateFallback(Throwable t) {
     	log.warn("Circuit breaker OPEN para DolarAPI. Usando fallback. Causa: {}", t.getMessage());
         ExchangeRateResponseDTO fallback = new ExchangeRateResponseDTO();
@@ -64,7 +64,7 @@ public class ExchangeRateService {
 
     /**
      * Units of toCurrency per 1 unit of fromCurrency, as of `date`.
-     * WHY: each transaction stores the rate of ITS OWN date so re-converting the
+     * Each transaction stores the rate of ITS OWN date so re-converting the
      * whole history later (e.g. on primary-currency change) stays accurate,
      * instead of applying today's rate to old transactions.
      */
@@ -81,7 +81,7 @@ public class ExchangeRateService {
         return self.getRateFromFrankfurter(fromCurrency, toCurrency, date);
     }
 
-    // WHY: DolarAPI only exposes the CURRENT official rate (no historical endpoint),
+    // DolarAPI only exposes the CURRENT official rate (no historical endpoint),
     // an accepted limitation for ARS pairs specifically. Every other pair uses
     // Frankfurter's historical ECB data.
     private double getRateViaArsBridge(String fromCurrency, String toCurrency, LocalDate date) {
@@ -130,8 +130,8 @@ public class ExchangeRateService {
         }
     }
     
-	 // Fallback: usa 1.0 (no-op conversion) para NO bloquear el guardado del income/expense.
-	 // El usuario prefiere guardar con una tasa desactualizada a no poder guardar nada.
+	 // Fallback: use 1.0 (no-op conversion) so saving an income/expense is never blocked.
+	 // Users prefer saving with an inaccurate rate over not being able to save at all.
 	 public double getRateFromFrankfurterFallback(String fromCurrency, String toCurrency, LocalDate date, Throwable t) {
 	     log.warn("Circuit breaker OPEN para Frankfurter ({} -> {}). Fallback = 1.0. Causa: {}",
 	             fromCurrency, toCurrency, t.getMessage());

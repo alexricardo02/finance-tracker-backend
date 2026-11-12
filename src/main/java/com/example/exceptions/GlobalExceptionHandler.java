@@ -66,19 +66,15 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, "The operation violates a data constraint (invalid or duplicate reference)");
     }
 
-    // H-5 fix: replaced runtimeException.printStackTrace() with structured logging via SLF4J.
-    // printStackTrace() writes to stderr, bypassing the logging framework (Logback/SLF4J),
-    // which means the stack trace may be missed by monitoring tools or appear unsanitised in
-    // aggregated logs. log.error() routes through the same pipeline as all other logs,
-    // supports MDC/tracing context, and keeps the client-facing message generic (no stack leak).
+    // Logged through SLF4J, not printStackTrace(), so the trace reaches the log pipeline with its
+    // MDC/tracing context, while the client only gets a generic message.
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
         log.error("Unexpected runtime error", ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
     }
 
-    // H-5 fix: added log.error() — the original handler was completely silent, making it
-    // impossible to diagnose unexpected checked exceptions in production.
+    // Logged because unexpected checked exceptions are otherwise impossible to diagnose in production.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception ex) {
         log.error("Unhandled exception", ex);

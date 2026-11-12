@@ -1,4 +1,3 @@
-// src/main/java/com/example/models/OutboxEvent.java (Nuevo archivo)
 package com.example.models;
 
 import jakarta.persistence.*;
@@ -12,10 +11,10 @@ public class OutboxEvent {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String eventType; // ej. "PRIMARY_CURRENCY_CHANGED"
+    private String eventType; // e.g. "PRIMARY_CURRENCY_CHANGED"
     
     @Column(columnDefinition = "TEXT")
-    private String payload;   // Los datos en JSON
+    private String payload;   // JSON-encoded event data
 
     private boolean processed = false;
     private LocalDateTime createdAt = LocalDateTime.now();

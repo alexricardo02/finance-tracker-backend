@@ -21,7 +21,7 @@ public class RefreshTokenService {
     @Autowired
     private UserRepository userRepository;
 
-    // Duración del Refresh Token: 7 días (en milisegundos)
+    // Refresh token lifetime: 7 days, in milliseconds
     private final Long refreshTokenDurationMs = 604800000L;
     
     @Transactional
@@ -31,15 +31,14 @@ public class RefreshTokenService {
 
         refreshToken.setUser(userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found")));
         refreshToken.setToken(java.util.UUID.randomUUID().toString());
-        refreshToken.setExpiryDate(java.time.Instant.now().plusMillis(refreshTokenDurationMs)); // <-- antes: 86400000L hardcodeado
+        refreshToken.setExpiryDate(java.time.Instant.now().plusMillis(refreshTokenDurationMs));
 
         return refreshTokenRepository.save(refreshToken);
     }
 
     public RefreshToken verifyExpiration(RefreshToken token) {
-        // Si la fecha actual es MAYOR que la fecha de expiración del token...
         if (token.getExpiryDate().compareTo(Instant.now()) < 0) {
-            refreshTokenRepository.delete(token); // Lo borramos por inútil
+            refreshTokenRepository.delete(token);
             throw new SecurityException("El Refresh Token ha expirado. Por favor, inicia sesión de nuevo.");
         }
         return token;

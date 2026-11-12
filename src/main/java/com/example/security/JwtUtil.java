@@ -34,7 +34,7 @@ public class JwtUtil {
     @PostConstruct
     public void init() {
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
-        // H-2 fix: enforce minimum secret length before the key is built.
+        // Enforce minimum secret length before the key is built.
         // Keys.hmacShaKeyFor() would throw on < 32 bytes, but we do it explicitly
         // here so the startup failure is a clear, actionable error message rather than
         // a cryptic WeakKeyException buried in the stack.
@@ -50,7 +50,7 @@ public class JwtUtil {
     
     private final long expirationTime = 900000; // 15 minutes
     
-    // Generate token — algorithm explicitly pinned to HS256 (H-2 fix)
+    // Generate token — algorithm explicitly pinned to HS256
     public String generateToken(String username, Role role) {
         String jti = UUID.randomUUID().toString();
         return Jwts.builder()
