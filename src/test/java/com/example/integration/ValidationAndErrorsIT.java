@@ -104,7 +104,7 @@ class ValidationAndErrorsIT extends AbstractApiIntegrationTest {
         assertErrorShape(call(HttpMethod.POST, "/api/expenses", user, without(expenseBody(1, "USD", TX_DATE, "x"), field)), 400);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
+    @Disabled("BUG-20: request DTOs do not require expense amount/currency or category fields, so the DB rejects them")
     @ParameterizedTest
     @ValueSource(strings = {"amount", "currency"})
     void createExpense_missingAmountOrCurrency_returns400(String field) {
@@ -155,7 +155,7 @@ class ValidationAndErrorsIT extends AbstractApiIntegrationTest {
         assertErrorShape(call(HttpMethod.PUT, "/api/settings/currency", newUser(), body), 400);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
+    @Disabled("BUG-20: request DTOs do not require expense amount/currency or category fields, so the DB rejects them")
     @Test
     void createCategory_missingFields_returns400() {
         assertErrorShape(call(HttpMethod.POST, "/api/categories", newUser(), "{}"), 400);
@@ -200,20 +200,17 @@ class ValidationAndErrorsIT extends AbstractApiIntegrationTest {
                 arguments("negative amount", "[" + row.replace("1.0", "-1.0") + "]"));
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @ParameterizedTest(name = "{0}")
     @MethodSource("invalidImports")
     void importTransactions_invalidPayload_returns400(String name, String body) {
         assertErrorShape(call(HttpMethod.POST, "/api/imports/transactions", newUser(), body), 400);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @Test
     void malformedJson_returns400() {
         assertErrorShape(call(HttpMethod.POST, "/api/incomes", newUser(), "{not json"), 400);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @Test
     void unknownEnumValue_returns400() {
         ApiUser user = newUser();
@@ -223,31 +220,26 @@ class ValidationAndErrorsIT extends AbstractApiIntegrationTest {
         assertErrorShape(call(HttpMethod.POST, "/api/incomes", user, body), 400);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @Test
     void nonNumericPathId_returns400() {
         assertErrorShape(call(HttpMethod.GET, "/api/incomes/abc", newUser(), null), 400);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @Test
     void malformedDateFilter_returns400() {
         assertErrorShape(call(HttpMethod.GET, "/api/incomes?startDate=yesterday", newUser(), null), 400);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @Test
     void missingRequiredQueryParam_returns400() {
         assertErrorShape(call(HttpMethod.GET, "/api/incomes/total-month", newUser(), null), 400);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @Test
     void unsupportedHttpMethod_returns405() {
         assertErrorShape(call(HttpMethod.DELETE, "/api/incomes", newUser(), null), 405);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @Test
     void unknownUrl_returns404() {
         assertErrorShape(call(HttpMethod.GET, "/api/does-not-exist", newUser(), null), 404);

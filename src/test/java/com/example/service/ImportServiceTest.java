@@ -1,5 +1,6 @@
 package com.example.service;
 
+import com.example.exceptions.BadRequestException;
 import com.example.exceptions.ResourceNotFoundException;
 import com.example.dataTransferObjects.ImportResultDTO;
 import com.example.dataTransferObjects.TransactionImportRowDTO;
@@ -106,7 +107,20 @@ class ImportServiceTest {
 
         assertThat(result.getImported()).isEqualTo(1);
         assertThat(result.getSkipped()).isEqualTo(1);
-        assertThat(result.getErrors()).anyMatch(e -> e.contains("Row 2"));
+        assertThat(result.getErrors()).containsExactly("Row 2: could not be imported");
+    }
+
+    @Test
+    void importTransactions_domainExceptionOnRow_keepsItsMessage() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(categoryRepository.findByUserUserIdOrUserIsNull(1)).thenReturn(List.of());
+        when(categoryRepository.save(any(Category.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(exchangeRateService.getConversionRate(anyString(), anyString(), any()))
+                .thenThrow(new BadRequestException("Unsupported currency"));
+
+        ImportResultDTO result = importService.importTransactions(List.of(row("income", 10.0, "Salary")), "john");
+
+        assertThat(result.getErrors()).containsExactly("Row 1: Unsupported currency");
     }
 
     @Test
