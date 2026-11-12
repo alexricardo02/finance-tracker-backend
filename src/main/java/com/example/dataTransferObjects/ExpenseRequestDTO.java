@@ -1,5 +1,9 @@
 package com.example.dataTransferObjects;
 
+import com.example.validation.SupportedCurrency;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import com.example.models.PaymentMethod;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
@@ -10,9 +14,13 @@ import jakarta.validation.constraints.Positive;
 
 public class ExpenseRequestDTO {
 
+	@NotNull(message = "Amount is required")
 	@Positive(message = "The amount must be positive")
+	@DecimalMax(value = "1000000000000", message = "Amount is too large")
 	private Double amount;
 
+	@NotBlank(message = "Currency is required")
+	@SupportedCurrency
 	private String currency;
 
 	@NotNull(message = "The date is required")
@@ -22,6 +30,7 @@ public class ExpenseRequestDTO {
 	@NotNull(message = "The category is required")
 	private Integer categoryId; // Added field
 
+	@Size(max = 255, message = "Description must be at most 255 characters")
 	private String description;
 	
 	@NotNull(message = "Payment method is mandatory")

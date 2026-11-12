@@ -1,5 +1,7 @@
 package com.example.controllers;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.util.List;
 
 import org.springframework.format.annotation.DateTimeFormat;
@@ -50,9 +52,12 @@ public class IncomeController {
 	@GetMapping
     public ResponseEntity<PagedResponse<IncomeResponseDTO>> getAllIncomes(
             Principal principal, 
-            @RequestParam(value= "page", defaultValue = "0", required = false) int page, 
+            @RequestParam(value= "page", defaultValue = "0", required = false)
+            @Min(value = 0, message = "Page must be 0 or greater") int page,
             // Increased size to ensure the statistics page aggregates the full period, not just the first 20 rows.
-            @RequestParam(value = "size", defaultValue = "1000", required = false) int size, 
+            @RequestParam(value = "size", defaultValue = "1000", required = false)
+            @Min(value = 1, message = "Size must be between 1 and 1000")
+            @Max(value = 1000, message = "Size must be between 1 and 1000") int size,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) Long categoryId,

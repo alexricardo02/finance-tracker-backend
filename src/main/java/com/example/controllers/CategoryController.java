@@ -1,5 +1,6 @@
 package com.example.controllers;
 
+import jakarta.validation.Valid;
 import com.example.exceptions.ConflictException;
 import com.example.exceptions.ForbiddenResourceException;
 import com.example.exceptions.ResourceNotFoundException;
@@ -57,7 +58,7 @@ public class CategoryController {
 
     // 2. Create a new category
     @PostMapping
-    public ResponseEntity<CategoryDTO> createCategory(@RequestBody CategoryDTO categoryDTO) {
+    public ResponseEntity<CategoryDTO> createCategory(@Valid @RequestBody CategoryDTO categoryDTO) {
         User user = userRepository.findByUsername(getAuthenticatedUsername())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 

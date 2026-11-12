@@ -1,10 +1,12 @@
 package com.example.dataTransferObjects;
 
+import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.NotBlank;
 
 public class LoginRequestDTO {
 	
 	@NotBlank(message = "Username is required")
+    @Size(max = 255, message = "Username must be at most 255 characters")
     private String username;
 
     @NotBlank(message = "Password is required")
