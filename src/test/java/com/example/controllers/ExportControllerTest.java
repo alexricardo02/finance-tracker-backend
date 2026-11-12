@@ -1,5 +1,6 @@
 package com.example.controllers;
 
+import com.example.exceptions.BadRequestException;
 import com.example.service.ExportService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -9,7 +10,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.security.Principal;
 
@@ -81,7 +81,7 @@ class ExportControllerTest {
         // instead of silently defaulting to CSV.
         assertThatThrownBy(() -> exportController.exportTransactions(
                 principal, "nope", null, null, null, null, "ALL"))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Unsupported export format");
     }
 

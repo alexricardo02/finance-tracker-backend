@@ -1,5 +1,7 @@
 package com.example.service;
 
+import com.example.exceptions.ApiException;
+import com.example.exceptions.ResourceNotFoundException;
 import com.example.dataTransferObjects.ImportResultDTO;
 import com.example.dataTransferObjects.TransactionImportRowDTO;
 import com.example.models.*;
@@ -7,7 +9,9 @@ import com.example.repository.CategoryRepository;
 import com.example.repository.ExpenseRepository;
 import com.example.repository.IncomeRepository;
 import com.example.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.ValidationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
@@ -17,6 +21,8 @@ import java.util.*;
 
 @Service
 public class ImportService {
+
+    private static final Logger log = LoggerFactory.getLogger(ImportService.class);
 
     private static final int BATCH_SIZE = 200;
 
@@ -30,7 +36,7 @@ public class ImportService {
     @Transactional
     public ImportResultDTO importTransactions(List<TransactionImportRowDTO> rows, String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Map<String, Category> categoryCache = new HashMap<>();
         List<Income> incomesToSave = new ArrayList<>();
@@ -69,7 +75,7 @@ public class ImportService {
                 }
             } catch (Exception e) {
                 skipped++;
-                errors.add("Row " + (i + 1) + ": " + e.getMessage());
+                errors.add("Row " + (i + 1) + ": " + rowFailureReason(e, i + 1));
             }
         }
 
@@ -78,6 +84,15 @@ public class ImportService {
         cacheService.evictUserFinancialCache(username);
 
         return new ImportResultDTO(incomesToSave.size() + expensesToSave.size(), skipped, errors);
+    }
+
+    // The reason is returned to the client, so only messages written for clients are passed through.
+    private static String rowFailureReason(Exception e, int rowNumber) {
+        if (e instanceof ApiException || e instanceof ValidationException) {
+            return e.getMessage();
+        }
+        log.warn("Import row {} could not be imported", rowNumber, e);
+        return "could not be imported";
     }
 
     private Category resolveCategory(String name, String kind, User user, Map<String, Category> cache) {

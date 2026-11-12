@@ -1,5 +1,7 @@
 package com.example.service;
 
+import com.example.exceptions.BadRequestException;
+import com.example.exceptions.ResourceNotFoundException;
 import java.time.LocalDate;
 
 
@@ -16,9 +18,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 import io.micrometer.core.instrument.MeterRegistry;
 import com.example.dataTransferObjects.ExpenseRequestDTO;
 import com.example.dataTransferObjects.ExpenseResponseDTO;
@@ -32,7 +32,6 @@ import com.example.repository.CategoryRepository;
 import com.example.repository.ExpenseRepository;
 import com.example.repository.UserRepository;
 
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -126,7 +125,7 @@ public class ExpenseService {
 
 	private Integer getUserIdByUsername(String username) {
 
-		return userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User not found"))
+		return userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"))
 				.getUserId();
 	}
 
@@ -136,7 +135,7 @@ public class ExpenseService {
 	public PagedResponse<ExpenseResponseDTO> getExpensesForCurrentUserPaginated(String username, int page, int size) {
 
 		User user = userRepository.findByUsername(username)
-				.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+				.orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
 		Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
 
@@ -153,15 +152,15 @@ public class ExpenseService {
 	public ExpenseResponseDTO saveExpense(ExpenseRequestDTO requestDTO, String username) {
 
 		if (requestDTO == null) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
+			throw new BadRequestException("Request body is required");
 		}
 
 		if (requestDTO.getCategoryId() == null) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CategoryId is required");
+			throw new BadRequestException("CategoryId is required");
 		}
 
 		Category category = categoryRepository.findById(requestDTO.getCategoryId())
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
+				.orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
 		if (!category.isUsableBy(username)) {
 			throw new ForbiddenResourceException("Not authorized to use this category");
@@ -176,7 +175,7 @@ public class ExpenseService {
 		expense.setCategory(category);
 
 		User user = userRepository.findByUsername(username)
-				.orElseThrow(() -> new EntityNotFoundException("User not found"));
+				.orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
 		expense.setUser(user);
 		
@@ -192,10 +191,10 @@ public class ExpenseService {
 	@Transactional(readOnly = true)
 	public ExpenseResponseDTO getExpenseById(int id, String username) {
 		Expense expense = expenseRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("Expense not found with ID: " + id));
+				.orElseThrow(() -> new ResourceNotFoundException("Expense not found"));
 
 		if (!expense.getUser().getUsername().equals(username)) {
-			throw new ForbiddenResourceException("No tienes permiso para ver este gasto");
+			throw new ForbiddenResourceException("Not authorized to view this expense");
 		}
 
 		return convertToResponseDTO(expense);
@@ -205,10 +204,10 @@ public class ExpenseService {
 	public void deleteExpense(Integer id, String username) {
 
 		Expense expense = expenseRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Egreso no encontrado con ID: " + id));
+				.orElseThrow(() -> new ResourceNotFoundException("Expense not found"));
 
 		if (!expense.getUser().getUsername().equals(username)) {
-			throw new ForbiddenResourceException("No tienes permiso para eliminar este egreso");
+			throw new ForbiddenResourceException("Not authorized to delete this expense");
 		}
 
 		expense.setDeletedAt(java.time.Instant.now());
@@ -222,14 +221,14 @@ public class ExpenseService {
 	public ExpenseResponseDTO updateExpense(int expenseId, ExpenseRequestDTO requestDTO, String username) {
 
 		Expense existingExpense = expenseRepository.findById(expenseId)
-				.orElseThrow(() -> new IllegalArgumentException("Expense not found"));
+				.orElseThrow(() -> new ResourceNotFoundException("Expense not found"));
 
 		if (!existingExpense.getUser().getUsername().equals(username)) {
-			throw new ForbiddenResourceException("No tienes permiso para editar este gasto");
+			throw new ForbiddenResourceException("Not authorized to edit this expense");
 		}
 
 		Category category = categoryRepository.findById(requestDTO.getCategoryId())
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
+				.orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
 		if (!category.isUsableBy(username)) {
 			throw new ForbiddenResourceException("Not authorized to use this category");
@@ -306,7 +305,7 @@ public class ExpenseService {
 	public Double getTotalExpenseAmounByDayAndUser(Integer day, String username) {
 
 		if (day == null || day < 1 || day > 31) {
-			throw new IllegalArgumentException("Invalid day");
+			throw new BadRequestException("Invalid day");
 		}
 
 		return expenseRepository.getTotalExpenseAmountByDayAndUser(day, getUserIdByUsername(username));
@@ -321,7 +320,7 @@ public class ExpenseService {
 			int monthNumber = java.time.Month.valueOf(month.toUpperCase()).getValue();
 			return expenseRepository.getTotalExpenseAmountByMonthAndUser(monthNumber, getUserIdByUsername(username));
 		} catch (IllegalArgumentException e) {
-			throw new IllegalArgumentException("Invalid month: " + month);
+			throw new BadRequestException("Invalid month");
 		}
 	}
 
@@ -329,7 +328,7 @@ public class ExpenseService {
 	@Cacheable(value = "expenses_year", key = "#username + '_' + #year")
 	public Double getTotalExpenseAmounByYearAndUser(Integer year, String username) {
 		if (year == null) {
-			throw new IllegalArgumentException("El año no puede ser nulo");
+			throw new BadRequestException("Year is required");
 		}
 		return expenseRepository.getTotalExpenseAmountByYearAndUser(year, getUserIdByUsername(username));
 	}

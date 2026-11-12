@@ -1,5 +1,7 @@
 package com.example.service;
 
+import com.example.exceptions.BadRequestException;
+import com.example.exceptions.ResourceNotFoundException;
 import java.time.LocalDate;
 
 
@@ -14,9 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.example.dataTransferObjects.IncomeRequestDTO;
 import com.example.dataTransferObjects.IncomeResponseDTO;
@@ -30,7 +30,6 @@ import com.example.repository.CategoryRepository;
 import com.example.repository.IncomeRepository;
 import com.example.repository.UserRepository;
 
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -123,7 +122,7 @@ public class IncomeService {
 	}
 
 	private Integer getUserIdByUsername(String username) {
-		return userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User not found"))
+		return userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"))
 				.getUserId();
 	}
 
@@ -131,15 +130,15 @@ public class IncomeService {
 	public IncomeResponseDTO saveIncome(IncomeRequestDTO requestDTO, String username) {
 
 		if (requestDTO.getAmount() == null) {
-			throw new IllegalArgumentException("Amount is required");
+			throw new BadRequestException("Amount is required");
 		}
 
 		if (requestDTO.getCategoryId() == null) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CategoryId is required");
+			throw new BadRequestException("CategoryId is required");
 		}
 
 		Category category = categoryRepository.findById(requestDTO.getCategoryId())
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
+				.orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
 		if (!category.isUsableBy(username)) {
 			throw new ForbiddenResourceException("Not authorized to use this category");
@@ -154,7 +153,7 @@ public class IncomeService {
 		income.setPaymentMethod(requestDTO.getPaymentMethod());
 
 		User user = userRepository.findByUsername(username)
-				.orElseThrow(() -> new EntityNotFoundException("User not found"));
+				.orElseThrow(() -> new ResourceNotFoundException("User not found"));
 		income.setUser(user);
 
 		income.setUser(user);
@@ -176,7 +175,7 @@ public class IncomeService {
 	public PagedResponse<IncomeResponseDTO> getIncomesForCurrentUserPaginated(String username, int page, int size) {
 
 		User user = userRepository.findByUsername(username)
-				.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+				.orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
 		Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
 
@@ -193,10 +192,10 @@ public class IncomeService {
 	public IncomeResponseDTO getIncomeById(Integer id, String username) {
 
 		Income income = incomeRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException("Income not found with ID: " + id));
+				.orElseThrow(() -> new ResourceNotFoundException("Income not found"));
 
 		if (!income.getUser().getUsername().equals(username)) {
-			throw new ForbiddenResourceException("No tienes permiso para ver este ingreso");
+			throw new ForbiddenResourceException("Not authorized to view this income");
 		}
 
 		return convertToResponseDTO(income);
@@ -206,10 +205,10 @@ public class IncomeService {
 	public void deleteIncome(Integer id, String username) {
 
 	    Income income = incomeRepository.findById(id)
-	            .orElseThrow(() -> new RuntimeException("Ingreso no encontrado con ID: " + id));
+	            .orElseThrow(() -> new ResourceNotFoundException("Income not found"));
 
 	    if (!income.getUser().getUsername().equals(username)) {
-	        throw new ForbiddenResourceException("No tienes permiso para eliminar este ingreso");
+	        throw new ForbiddenResourceException("Not authorized to delete this income");
 	    }
 
 	    income.setDeletedAt(java.time.Instant.now());
@@ -222,14 +221,14 @@ public class IncomeService {
 	public IncomeResponseDTO updateIncome(Integer incomeId, IncomeRequestDTO incomeRequestDTO, String username) {
 
 		Income existingIncome = incomeRepository.findById(incomeId)
-				.orElseThrow(() -> new RuntimeException("Ingreso no encontrado con ID: " + incomeId));
+				.orElseThrow(() -> new ResourceNotFoundException("Income not found"));
 
 		if (!existingIncome.getUser().getUsername().equals(username)) {
-			throw new ForbiddenResourceException("No tienes permiso para editar este ingreso");
+			throw new ForbiddenResourceException("Not authorized to edit this income");
 		}
 
 		Category category = categoryRepository.findById(incomeRequestDTO.getCategoryId())
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
+				.orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
 		if (!category.isUsableBy(username)) {
 			throw new ForbiddenResourceException("Not authorized to use this category");
@@ -275,14 +274,14 @@ public class IncomeService {
 			return incomeRepository.getTotalIncomeAmountByMonthAndUser(monthNumber, getUserIdByUsername(username));
 
 		} catch (IllegalArgumentException e) {
-			throw new IllegalArgumentException("Invalid month: " + month);
+			throw new BadRequestException("Invalid month");
 		}
 	}
 
 	@Cacheable(value = "incomes_year", key = "#username + '_' + #year")
 	public double getTotalIncomeAmountByYear(Integer year, String username) {
 		if (year == null) {
-			throw new IllegalArgumentException("Year cannot be null");
+			throw new BadRequestException("Year is required");
 		}
 		return incomeRepository.getTotalIncomeAmountByYearAndUser(year, getUserIdByUsername(username));
 	}
@@ -291,7 +290,7 @@ public class IncomeService {
 	public Double getTotalIncomeAmounByDay(Integer day, String username) {
 
 		if (day == null || day < 1 || day > 31) {
-			throw new IllegalArgumentException("Invalid day");
+			throw new BadRequestException("Invalid day");
 		}
 
 		return incomeRepository.getTotalIncomeAmountByDayAndUser(day, getUserIdByUsername(username));

@@ -1,5 +1,7 @@
 package com.example.service;
 
+import com.example.exceptions.BadRequestException;
+import com.example.exceptions.ResourceNotFoundException;
 import com.example.dataTransferObjects.UserSettingsDTO;
 import com.example.events.PrimaryCurrencyChangedEvent;
 import com.example.events.PrimaryCurrencyChangedListener;
@@ -7,7 +9,6 @@ import com.example.models.OutboxEvent;
 import com.example.models.User;
 import com.example.repository.OutboxEventRepository;
 import com.example.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,25 +55,25 @@ class SettingsServiceTest {
     }
 
     @Test
-    void getSettings_userNotFound_throwsEntityNotFoundException() {
+    void getSettings_userNotFound_throwsResourceNotFoundException() {
         when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> settingsService.getSettings("ghost"))
-                .isInstanceOf(EntityNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
-    void updatePrimaryCurrency_unsupportedCurrency_throwsIllegalArgumentException_noSideEffects() {
+    void updatePrimaryCurrency_unsupportedCurrency_throwsBadRequestException_noSideEffects() {
         assertThatThrownBy(() -> settingsService.updatePrimaryCurrency("john", "XXX"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class);
 
         verifyNoInteractions(userRepository, outboxEventRepository, currencyRecalculationHandler);
     }
 
     @Test
-    void updatePrimaryCurrency_nullCurrency_throwsIllegalArgumentException() {
+    void updatePrimaryCurrency_nullCurrency_throwsBadRequestException() {
         assertThatThrownBy(() -> settingsService.updatePrimaryCurrency("john", null))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test
@@ -108,10 +109,10 @@ class SettingsServiceTest {
     }
 
     @Test
-    void updatePrimaryCurrency_userNotFound_throwsEntityNotFoundException() {
+    void updatePrimaryCurrency_userNotFound_throwsResourceNotFoundException() {
         when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> settingsService.updatePrimaryCurrency("ghost", "EUR"))
-                .isInstanceOf(EntityNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 }

@@ -1,7 +1,6 @@
 package com.example.integration;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -104,7 +103,6 @@ class ValidationAndErrorsIT extends AbstractApiIntegrationTest {
         assertErrorShape(call(HttpMethod.POST, "/api/expenses", user, without(expenseBody(1, "USD", TX_DATE, "x"), field)), 400);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @ParameterizedTest
     @ValueSource(strings = {"amount", "currency"})
     void createExpense_missingAmountOrCurrency_returns400(String field) {
@@ -120,7 +118,6 @@ class ValidationAndErrorsIT extends AbstractApiIntegrationTest {
         assertErrorShape(call(HttpMethod.POST, "/api/expenses", user, expenseBody(amount, "USD", TX_DATE, "x")), 400);
     }
 
-    @Disabled("BUG-17: transaction currency is not validated and reaches the Frankfurter URL unescaped")
     @Test
     void createTransaction_unsupportedCurrency_returns400() {
         ApiUser user = newUser();
@@ -137,7 +134,6 @@ class ValidationAndErrorsIT extends AbstractApiIntegrationTest {
         assertErrorShape(call(HttpMethod.POST, "/api/users/register", null, body), 400);
     }
 
-    @Disabled("BUG-16: UserRegistrationDTO does not validate the email format")
     @Test
     void register_malformedEmail_returns400() {
         assertErrorShape(call(HttpMethod.POST, "/api/users/register", null,
@@ -155,7 +151,6 @@ class ValidationAndErrorsIT extends AbstractApiIntegrationTest {
         assertErrorShape(call(HttpMethod.PUT, "/api/settings/currency", newUser(), body), 400);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @Test
     void createCategory_missingFields_returns400() {
         assertErrorShape(call(HttpMethod.POST, "/api/categories", newUser(), "{}"), 400);
@@ -200,20 +195,17 @@ class ValidationAndErrorsIT extends AbstractApiIntegrationTest {
                 arguments("negative amount", "[" + row.replace("1.0", "-1.0") + "]"));
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @ParameterizedTest(name = "{0}")
     @MethodSource("invalidImports")
     void importTransactions_invalidPayload_returns400(String name, String body) {
         assertErrorShape(call(HttpMethod.POST, "/api/imports/transactions", newUser(), body), 400);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @Test
     void malformedJson_returns400() {
         assertErrorShape(call(HttpMethod.POST, "/api/incomes", newUser(), "{not json"), 400);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @Test
     void unknownEnumValue_returns400() {
         ApiUser user = newUser();
@@ -223,31 +215,26 @@ class ValidationAndErrorsIT extends AbstractApiIntegrationTest {
         assertErrorShape(call(HttpMethod.POST, "/api/incomes", user, body), 400);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @Test
     void nonNumericPathId_returns400() {
         assertErrorShape(call(HttpMethod.GET, "/api/incomes/abc", newUser(), null), 400);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @Test
     void malformedDateFilter_returns400() {
         assertErrorShape(call(HttpMethod.GET, "/api/incomes?startDate=yesterday", newUser(), null), 400);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @Test
     void missingRequiredQueryParam_returns400() {
         assertErrorShape(call(HttpMethod.GET, "/api/incomes/total-month", newUser(), null), 400);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @Test
     void unsupportedHttpMethod_returns405() {
         assertErrorShape(call(HttpMethod.DELETE, "/api/incomes", newUser(), null), 405);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @Test
     void unknownUrl_returns404() {
         assertErrorShape(call(HttpMethod.GET, "/api/does-not-exist", newUser(), null), 404);
@@ -260,7 +247,6 @@ class ValidationAndErrorsIT extends AbstractApiIntegrationTest {
         assertErrorShape(call(HttpMethod.GET, "/api/incomes/99999999", user, null), 404);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @Test
     void updateOrDeleteMissingTransaction_returns404() {
         ApiUser user = newUser();
@@ -300,9 +286,96 @@ class ValidationAndErrorsIT extends AbstractApiIntegrationTest {
 
     @Test
     void dataConstraintViolation_returns409WithoutSqlDetails() {
-        ResponseEntity<String> response = call(HttpMethod.POST, "/api/categories", newUser(),
-                Map.of("name", "x".repeat(101), "type", "income"));
+        // A soft-deleted account is invisible to the existence checks but still holds the unique username,
+        // so only the database rejects the second registration.
+        ApiUser deleted = newUser();
+        call(HttpMethod.DELETE, "/api/users/me", deleted, Map.of("password", PASSWORD));
 
-        assertErrorShape(response, 409);
+        ResponseEntity<String> response = call(HttpMethod.POST, "/api/users/register", null,
+                Map.of("username", deleted.username(), "password", PASSWORD, "email", System.nanoTime() + "@test.com"));
+
+        assertMessage(response, 409, "The operation violates a data constraint (invalid or duplicate reference)");
+        assertThat(response.getBody()).doesNotContainIgnoringCase("duplicate key").doesNotContain("users", "uk", "SQL");
+    }
+
+    @Test
+    void createCategory_nameOver100Characters_returns400() {
+        assertMessage(call(HttpMethod.POST, "/api/categories", newUser(), Map.of("name", "x".repeat(101), "type", "income")),
+                400, "Category name must be at most 100 characters");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"usd", "USD'; --"})
+    void invalidCurrency_rejectedOnEveryWritePath_beforeReachingFxApi(String currency) throws Exception {
+        ApiUser user = newUser();
+        String importRow = "[{\"kind\":\"income\",\"amount\":1.0,\"currency\":" + objectMapper.writeValueAsString(currency)
+                + ",\"date\":\"" + TX_DATE + "\",\"categoryName\":\"Salary\"}]";
+
+        assertMessage(call(HttpMethod.POST, "/api/expenses", user, expenseBody(1, currency, TX_DATE, "x")), 400, "Unsupported currency");
+        assertMessage(call(HttpMethod.POST, "/api/incomes", user, incomeBody(1, currency, TX_DATE, "x")), 400, "Unsupported currency");
+        assertMessage(call(HttpMethod.POST, "/api/imports/transactions", user, importRow), 400, "Unsupported currency");
+        assertMessage(call(HttpMethod.PUT, "/api/settings/currency", user, Map.of("primaryCurrency", currency)), 400, "Unsupported currency");
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM incomes WHERE user_id = ?", Integer.class, user.id())).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM expenses WHERE user_id = ?", Integer.class, user.id())).isZero();
+        assertThat(jdbc.queryForObject("SELECT primary_currency FROM users WHERE user_id = ?", String.class, user.id())).isEqualTo("USD");
+        assertThat(FX_API.getAllServeEvents()).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/api/incomes", "/api/expenses"})
+    void listTransactions_sizeAtLimit_returns200(String path) {
+        ApiUser user = newUser();
+
+        assertThat(call(HttpMethod.GET, path + "?size=1000", user, null).getStatusCode().value()).isEqualTo(200);
+        assertThat(call(HttpMethod.GET, path + "?page=0&size=100", user, null).getStatusCode().value()).isEqualTo(200);
+        assertThat(call(HttpMethod.GET, path, user, null).getStatusCode().value()).isEqualTo(200);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/api/incomes", "/api/expenses"})
+    void listTransactions_paginationOutOfRange_returns400(String path) {
+        ApiUser user = newUser();
+
+        assertMessage(call(HttpMethod.GET, path + "?size=1001", user, null), 400, "Size must be between 1 and 1000");
+        assertMessage(call(HttpMethod.GET, path + "?size=0", user, null), 400, "Size must be between 1 and 1000");
+        assertMessage(call(HttpMethod.GET, path + "?page=-1", user, null), 400, "Page must be 0 or greater");
+    }
+
+    @Test
+    void register_usernameWithQuote_returns400() {
+        ResponseEntity<String> response = call(HttpMethod.POST, "/api/users/register", null,
+                Map.of("username", "bad\"name" + System.nanoTime(), "password", PASSWORD, "email", System.nanoTime() + "@test.com"));
+
+        assertMessage(response, 400, "Username must be 3-50 characters: letters, digits, '.', '_' or '-'");
+    }
+
+    @Test
+    void login_legacyUsernameOutsideNewPattern_stillWorks() {
+        ApiUser legacy = newUser("legacy user@" + System.nanoTime());
+
+        assertThat(login(legacy.username(), PASSWORD).getStatusCode().value()).isEqualTo(200);
+    }
+
+    @Test
+    void createCategory_invalidType_returns400() {
+        assertMessage(call(HttpMethod.POST, "/api/categories", newUser(), Map.of("name", "Mine", "type", "Income")),
+                400, "Category type must be 'income' or 'expense'");
+    }
+
+    @Test
+    void createTransaction_descriptionOver255Characters_returns400() {
+        ApiUser user = newUser();
+        String description = "d".repeat(256);
+
+        assertMessage(call(HttpMethod.POST, "/api/incomes", user, incomeBody(1, "USD", TX_DATE, description)),
+                400, "Description must be at most 255 characters");
+        assertMessage(call(HttpMethod.POST, "/api/expenses", user, expenseBody(1, "USD", TX_DATE, description)),
+                400, "Description must be at most 255 characters");
+    }
+
+    private void assertMessage(ResponseEntity<String> response, int status, String message) {
+        assertErrorShape(response, status);
+        assertThat(json(response).get("message").asText()).isEqualTo(message);
     }
 }

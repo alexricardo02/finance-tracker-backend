@@ -1,5 +1,6 @@
 package com.example.controllers;
 
+import com.example.exceptions.ForbiddenResourceException;
 import com.example.dataTransferObjects.ExpenseRequestDTO;
 import com.example.dataTransferObjects.ExpenseResponseDTO;
 import com.example.dataTransferObjects.PagedResponse;
@@ -116,7 +117,7 @@ class ExpenseControllerTest {
     }
 
     @Test
-    void updateExpense_ownedByAnotherUser_serviceThrowsSecurityException() {
+    void updateExpense_ownedByAnotherUser_serviceThrowsForbiddenResourceException() {
         // WHY: IDOR — the service is the enforcement point. The controller passes
         // principal.getName() so the service can check ownership.
         ExpenseRequestDTO request = new ExpenseRequestDTO();
@@ -126,10 +127,10 @@ class ExpenseControllerTest {
         request.setPaymentMethod(PaymentMethod.CASH);
 
         when(expenseService.updateExpense(10, request, "john"))
-                .thenThrow(new SecurityException("No tienes permiso para editar este gasto"));
+                .thenThrow(new ForbiddenResourceException("Not authorized to edit this expense"));
 
         assertThatThrownBy(() -> expenseController.updateExpense(principal, 10, request))
-                .isInstanceOf(SecurityException.class);
+                .isInstanceOf(ForbiddenResourceException.class);
     }
 
     // ── deleteExpense ─────────────────────────────────────────────────────────
@@ -144,12 +145,12 @@ class ExpenseControllerTest {
     }
 
     @Test
-    void deleteExpense_ownedByAnotherUser_serviceThrowsSecurityException() {
+    void deleteExpense_ownedByAnotherUser_serviceThrowsForbiddenResourceException() {
         // WHY: same IDOR pattern as update — ownership is enforced at the service layer.
-        doThrow(new SecurityException("No tienes permiso para eliminar este egreso"))
+        doThrow(new ForbiddenResourceException("Not authorized to delete this expense"))
                 .when(expenseService).deleteExpense(10, "john");
 
         assertThatThrownBy(() -> expenseController.deleteExpense(principal, 10))
-                .isInstanceOf(SecurityException.class);
+                .isInstanceOf(ForbiddenResourceException.class);
     }
 }

@@ -1,5 +1,9 @@
 package com.example.service;
 
+import com.example.exceptions.BadRequestException;
+import com.example.exceptions.ConflictException;
+import com.example.exceptions.InvalidCredentialsException;
+import com.example.exceptions.ResourceNotFoundException;
 import com.example.dataTransferObjects.LoginRequestDTO;
 import com.example.dataTransferObjects.PasswordChangeDTO;
 import com.example.dataTransferObjects.UserProfileDTO;
@@ -13,7 +17,6 @@ import com.example.repository.IncomeRepository;
 import com.example.repository.PasswordResetTokenRepository;
 import com.example.repository.RefreshTokenRepository;
 import com.example.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,24 +71,24 @@ class UserServiceTest {
     }
 
     @Test
-    void saveUser_emailAlreadyExists_throwsIllegalArgumentException() {
+    void saveUser_emailAlreadyExists_throwsConflictException() {
         UserRegistrationDTO dto = new UserRegistrationDTO("john", "Password1", "john@test.com");
         when(userRepository.existsByEmail("john@test.com")).thenReturn(true);
 
         assertThatThrownBy(() -> userService.saveUser(dto))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(ConflictException.class);
 
         verify(userRepository, never()).save(any());
     }
 
     @Test
-    void saveUser_usernameAlreadyExists_throwsIllegalArgumentException() {
+    void saveUser_usernameAlreadyExists_throwsConflictException() {
         UserRegistrationDTO dto = new UserRegistrationDTO("john", "Password1", "john@test.com");
         when(userRepository.existsByEmail("john@test.com")).thenReturn(false);
         when(userRepository.existsByUsername("john")).thenReturn(true);
 
         assertThatThrownBy(() -> userService.saveUser(dto))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(ConflictException.class);
     }
 
     @Test
@@ -98,11 +101,11 @@ class UserServiceTest {
     }
 
     @Test
-    void getRoleByUsername_notFound_throwsEntityNotFoundException() {
+    void getRoleByUsername_notFound_throwsResourceNotFoundException() {
         when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.getRoleByUsername("ghost"))
-                .isInstanceOf(EntityNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
@@ -115,11 +118,11 @@ class UserServiceTest {
     }
 
     @Test
-    void getUserById_notFound_throwsEntityNotFoundException() {
+    void getUserById_notFound_throwsResourceNotFoundException() {
         when(userRepository.findById(999)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.getUserById(999))
-                .isInstanceOf(EntityNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
@@ -133,11 +136,11 @@ class UserServiceTest {
     }
 
     @Test
-    void deleteUser_notFound_throwsRuntimeException() {
+    void deleteUser_notFound_throwsResourceNotFoundException() {
         when(userRepository.findById(999)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.deleteUser(999))
-                .isInstanceOf(RuntimeException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
@@ -155,18 +158,18 @@ class UserServiceTest {
     }
 
     @Test
-    void updateUserProfile_usernameAlreadyTaken_throwsIllegalArgumentException() {
+    void updateUserProfile_usernameAlreadyTaken_throwsConflictException() {
         UserUpdateDTO dto = new UserUpdateDTO("takenUsername", "john@test.com");
 
         when(userRepository.findById(1)).thenReturn(Optional.of(user));
         when(userRepository.existsByUsername("takenUsername")).thenReturn(true);
 
         assertThatThrownBy(() -> userService.updateUserProfile(1, dto))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(ConflictException.class);
     }
 
     @Test
-    void updateUserProfile_emailAlreadyTaken_throwsIllegalArgumentException() {
+    void updateUserProfile_emailAlreadyTaken_throwsConflictException() {
         UserUpdateDTO dto = new UserUpdateDTO("newUsername", "taken@test.com");
 
         when(userRepository.findById(1)).thenReturn(Optional.of(user));
@@ -174,11 +177,11 @@ class UserServiceTest {
         when(userRepository.existsByEmail("taken@test.com")).thenReturn(true);
 
         assertThatThrownBy(() -> userService.updateUserProfile(1, dto))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(ConflictException.class);
     }
 
     @Test
-    void updateUserProfile_invalidEmailFormat_throwsIllegalArgumentException() {
+    void updateUserProfile_invalidEmailFormat_throwsBadRequestException() {
         UserUpdateDTO dto = new UserUpdateDTO("newUsername", "not-an-email");
 
         when(userRepository.findById(1)).thenReturn(Optional.of(user));
@@ -186,7 +189,7 @@ class UserServiceTest {
         when(userRepository.existsByEmail("not-an-email")).thenReturn(false);
 
         assertThatThrownBy(() -> userService.updateUserProfile(1, dto))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test
@@ -204,14 +207,14 @@ class UserServiceTest {
     }
 
     @Test
-    void updatePassword_wrongCurrentPassword_throwsSecurityException() {
+    void updatePassword_wrongCurrentPassword_throwsInvalidCredentialsException() {
         PasswordChangeDTO dto = new PasswordChangeDTO("wrongOld", "newPassword123");
 
         when(userRepository.findById(1)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("wrongOld", "hashedPassword")).thenReturn(false);
 
         assertThatThrownBy(() -> userService.updatePassword(1, dto))
-                .isInstanceOf(SecurityException.class);
+                .isInstanceOf(InvalidCredentialsException.class);
 
         verify(userRepository, never()).save(any());
     }
@@ -229,25 +232,25 @@ class UserServiceTest {
     }
 
     @Test
-    void login_userNotFound_throwsSecurityException_withGenericMessage() {
+    void login_userNotFound_throwsInvalidCredentialsException_withGenericMessage() {
         LoginRequestDTO dto = new LoginRequestDTO("unknown", "pw");
         when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.login(dto))
-                .isInstanceOf(SecurityException.class)
-                .hasMessage("Usuario o contraseña incorrectos");
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessage("Invalid username or password");
     }
 
     @Test
-    void login_wrongPassword_throwsSecurityException_withSameGenericMessage() {
+    void login_wrongPassword_throwsInvalidCredentialsException_withSameGenericMessage() {
         // WHY: same message as "user not found" so the endpoint doesn't leak which usernames exist.
         LoginRequestDTO dto = new LoginRequestDTO("john", "wrongPassword");
         when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("wrongPassword", "hashedPassword")).thenReturn(false);
 
         assertThatThrownBy(() -> userService.login(dto))
-                .isInstanceOf(SecurityException.class)
-                .hasMessage("Usuario o contraseña incorrectos");
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessage("Invalid username or password");
     }
 
     @Test
@@ -266,22 +269,22 @@ class UserServiceTest {
     }
 
     @Test
-    void deleteAccount_wrongPassword_throwsSecurityException_andDeletesNothing() {
+    void deleteAccount_wrongPassword_throwsInvalidCredentialsException_andDeletesNothing() {
         when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("wrongPassword", "hashedPassword")).thenReturn(false);
 
         assertThatThrownBy(() -> userService.deleteAccount("john", "wrongPassword"))
-                .isInstanceOf(SecurityException.class);
+                .isInstanceOf(InvalidCredentialsException.class);
 
         verify(userRepository, never()).delete(any());
         verify(expenseRepository, never()).hardDeleteAllByUserId(anyInt());
     }
 
     @Test
-    void deleteAccount_userNotFound_throwsEntityNotFoundException() {
+    void deleteAccount_userNotFound_throwsResourceNotFoundException() {
         when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.deleteAccount("ghost", "any"))
-                .isInstanceOf(EntityNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 }

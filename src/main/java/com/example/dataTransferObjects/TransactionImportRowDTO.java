@@ -1,5 +1,6 @@
 package com.example.dataTransferObjects;
 
+import com.example.validation.SupportedCurrency;
 import com.example.models.PaymentMethod;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.*;
@@ -13,9 +14,11 @@ public class TransactionImportRowDTO {
     private String kind;
 
     @NotNull @Positive
+    @DecimalMax(value = "1000000000000", message = "Amount is too large")
     private Double amount;
 
     @NotBlank
+    @SupportedCurrency
     private String currency;
 
     @NotNull
@@ -23,8 +26,10 @@ public class TransactionImportRowDTO {
     private LocalDate date;
 
     @NotBlank
+    @Size(max = 100, message = "Category name must be at most 100 characters")
     private String categoryName;
 
+    @Size(max = 255, message = "Description must be at most 255 characters")
     private String description;
 
     private PaymentMethod paymentMethod = PaymentMethod.OTHER;

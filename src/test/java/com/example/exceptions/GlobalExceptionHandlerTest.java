@@ -3,12 +3,13 @@ package com.example.exceptions;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.context.request.WebRequest;
 
 import java.util.List;
 
@@ -21,28 +22,21 @@ class GlobalExceptionHandlerTest {
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
     @Test
-    void handleEntityNotFound_returns404() {
+    void handleEntityNotFound_returns404_genericMessage() {
         ResponseEntity<ErrorResponse> response = handler.handleEntityNotFound(
-                new EntityNotFoundException("Income not found"));
+                new EntityNotFoundException("Unable to find com.example.models.Income with id 42"));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        assertThat(response.getBody().getMessage()).isEqualTo("Income not found");
+        assertThat(response.getBody().getMessage()).isEqualTo("Resource not found");
     }
 
     @Test
-    void handleIllegalArgument_returns400() {
+    void handleIllegalArgument_returns400_genericMessage() {
         ResponseEntity<ErrorResponse> response = handler.handleIllegalArgument(
                 new IllegalArgumentException("Invalid data"));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    }
-
-    @Test
-    void handleSecurityException_returns401() {
-        ResponseEntity<ErrorResponse> response = handler.handleSecurityException(
-                new SecurityException("Not allowed"));
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getBody().getMessage()).isEqualTo("Invalid request");
     }
 
     @Test
@@ -53,15 +47,6 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(response.getBody().getMessage())
                 .isEqualTo("The operation violates a data constraint (invalid or duplicate reference)");
-    }
-
-    @Test
-    void handleResponseStatusException_returnsMatchingStatusAndReason() {
-        ResponseEntity<ErrorResponse> response = handler.handleResponseStatus(
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        assertThat(response.getBody().getMessage()).isEqualTo("Category not found");
     }
 
     @Test
@@ -84,17 +69,18 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void handleValidationExceptions_returns400_withFirstFieldError() {
+    void handleMethodArgumentNotValid_returns400_withFirstFieldErrorByFieldName() {
         MethodArgumentNotValidException ex = mock(MethodArgumentNotValidException.class);
         BindingResult bindingResult = mock(BindingResult.class);
-        FieldError fieldError = new FieldError("dto", "amount", "Amount is required");
-
         when(ex.getBindingResult()).thenReturn(bindingResult);
-        when(bindingResult.getFieldErrors()).thenReturn(List.of(fieldError));
+        when(bindingResult.getFieldErrors()).thenReturn(List.of(
+                new FieldError("dto", "date", "The date is required"),
+                new FieldError("dto", "amount", "Amount is required")));
 
-        ResponseEntity<ErrorResponse> response = handler.handleValidationExceptions(ex);
+        ResponseEntity<Object> response = handler.handleMethodArgumentNotValid(
+                ex, new HttpHeaders(), HttpStatus.BAD_REQUEST, mock(WebRequest.class));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody().getMessage()).isEqualTo("Amount is required");
+        assertThat(((ErrorResponse) response.getBody()).getMessage()).isEqualTo("Amount is required");
     }
 }

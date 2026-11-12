@@ -1,27 +1,25 @@
 package com.example.service;
 
+import com.example.exceptions.BadRequestException;
+import com.example.exceptions.ResourceNotFoundException;
 import com.example.dataTransferObjects.UserSettingsDTO;
 
 import com.example.events.PrimaryCurrencyChangedListener;
 import com.example.events.PrimaryCurrencyChangedEvent;
 import com.example.models.OutboxEvent;
+import com.example.models.SupportedCurrency;
 import com.example.models.User;
 import com.example.repository.OutboxEventRepository;
 import com.example.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.config.RabbitMQConfig;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import java.util.Set;
 
 @Service
 public class SettingsService {
-
-    // Whitelist avoids storing garbage currency codes that would break FX lookups
-    private static final Set<String> SUPPORTED_CURRENCIES = Set.of("USD", "EUR", "GBP", "ARS", "JPY");
 
     @Autowired private UserRepository userRepository;
     @Autowired private RabbitTemplate rabbitTemplate;
@@ -31,18 +29,20 @@ public class SettingsService {
 
     public UserSettingsDTO getSettings(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return new UserSettingsDTO(user.getPrimaryCurrency());
     }
 
     @Transactional
     public UserSettingsDTO updatePrimaryCurrency(String username, String newCurrency) {
-        if (newCurrency == null || !SUPPORTED_CURRENCIES.contains(newCurrency)) {
-            throw new IllegalArgumentException("Unsupported currency: " + newCurrency);
+        // Also enforced on UserSettingsDTO; checked again because this method is the last stop before
+        // the value is stored and used to build FX lookups.
+        if (!SupportedCurrency.isSupported(newCurrency)) {
+            throw new BadRequestException("Unsupported currency");
         }
 
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (newCurrency.equals(user.getPrimaryCurrency())) {
             return new UserSettingsDTO(newCurrency);

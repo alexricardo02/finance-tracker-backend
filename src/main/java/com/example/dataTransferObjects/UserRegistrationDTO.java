@@ -1,11 +1,14 @@
  package com.example.dataTransferObjects;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
 public class UserRegistrationDTO {
 	
 	@NotBlank(message = "The username is required")
+	@Pattern(regexp = "^[A-Za-z0-9._-]{3,50}$", message = "Username must be 3-50 characters: letters, digits, '.', '_' or '-'")
 	private String username;
 	
 	@NotBlank(message = "The password is required")
@@ -13,6 +16,8 @@ public class UserRegistrationDTO {
     private String password; // Plain text, not hashed
 	
 	@NotBlank(message = "The email is required")
+    @Email(regexp = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", message = "Invalid email format")
+    @Size(max = 254, message = "Email must be at most 254 characters")
     private String email;
 
 	public String getUsername() {

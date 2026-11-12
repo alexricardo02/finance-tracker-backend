@@ -1,5 +1,8 @@
 package com.example.service;
 
+import com.example.exceptions.BadRequestException;
+import com.example.exceptions.ForbiddenResourceException;
+import com.example.exceptions.ResourceNotFoundException;
 import com.example.dataTransferObjects.ExpenseRequestDTO;
 import com.example.dataTransferObjects.ExpenseResponseDTO;
 import com.example.dataTransferObjects.PagedResponse;
@@ -25,7 +28,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.Date;
@@ -87,23 +89,23 @@ class ExpenseServiceTest {
     }
 
     @Test
-    void saveExpense_nullRequestDTO_throwsResponseStatusException() {
+    void saveExpense_nullRequestDTO_throwsBadRequestException() {
         assertThatThrownBy(() -> expenseService.saveExpense(null, "john"))
-                .isInstanceOf(ResponseStatusException.class);
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test
-    void saveExpense_nullCategoryId_throwsResponseStatusException() {
+    void saveExpense_nullCategoryId_throwsBadRequestException() {
         ExpenseRequestDTO dto = new ExpenseRequestDTO();
         dto.setAmount(100.0);
         dto.setCategoryId(null);
 
         assertThatThrownBy(() -> expenseService.saveExpense(dto, "john"))
-                .isInstanceOf(ResponseStatusException.class);
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test
-    void saveExpense_categoryNotFound_throwsResponseStatusException() {
+    void saveExpense_categoryNotFound_throwsResourceNotFoundException() {
         ExpenseRequestDTO dto = new ExpenseRequestDTO();
         dto.setAmount(100.0);
         dto.setCategoryId(999);
@@ -111,7 +113,7 @@ class ExpenseServiceTest {
         when(categoryRepository.findById(999)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> expenseService.saveExpense(dto, "john"))
-                .isInstanceOf(ResponseStatusException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
@@ -124,19 +126,19 @@ class ExpenseServiceTest {
     }
 
     @Test
-    void getExpenseById_notFound_throwsIllegalArgumentException() {
+    void getExpenseById_notFound_throwsResourceNotFoundException() {
         when(expenseRepository.findById(999)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> expenseService.getExpenseById(999, "john"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
-    void getExpenseById_wrongUser_throwsSecurityException() {
+    void getExpenseById_wrongUser_throwsForbiddenResourceException() {
         when(expenseRepository.findById(20)).thenReturn(Optional.of(expense));
 
         assertThatThrownBy(() -> expenseService.getExpenseById(20, "intruder"))
-                .isInstanceOf(SecurityException.class);
+                .isInstanceOf(ForbiddenResourceException.class);
     }
 
     @Test
@@ -152,11 +154,11 @@ class ExpenseServiceTest {
     }
 
     @Test
-    void deleteExpense_wrongUser_throwsSecurityException() {
+    void deleteExpense_wrongUser_throwsForbiddenResourceException() {
         when(expenseRepository.findById(20)).thenReturn(Optional.of(expense));
 
         assertThatThrownBy(() -> expenseService.deleteExpense(20, "intruder"))
-                .isInstanceOf(SecurityException.class);
+                .isInstanceOf(ForbiddenResourceException.class);
 
         verify(expenseRepository, never()).save(any());
     }
@@ -203,42 +205,42 @@ class ExpenseServiceTest {
     }
 
     @Test
-    void updateExpense_wrongUser_throwsSecurityException() {
+    void updateExpense_wrongUser_throwsForbiddenResourceException() {
         ExpenseRequestDTO dto = new ExpenseRequestDTO();
         when(expenseRepository.findById(20)).thenReturn(Optional.of(expense));
 
         assertThatThrownBy(() -> expenseService.updateExpense(20, dto, "intruder"))
-                .isInstanceOf(SecurityException.class);
+                .isInstanceOf(ForbiddenResourceException.class);
     }
 
     @Test
-    void getTotalExpenseAmounByMonthAndUser_invalidMonth_throwsIllegalArgumentException() {
+    void getTotalExpenseAmounByMonthAndUser_invalidMonth_throwsBadRequestException() {
         assertThatThrownBy(() -> expenseService.getTotalExpenseAmounByMonthAndUser("NOTAMONTH", "john"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test
-    void getTotalExpenseAmounByYearAndUser_nullYear_throwsIllegalArgumentException() {
+    void getTotalExpenseAmounByYearAndUser_nullYear_throwsBadRequestException() {
         assertThatThrownBy(() -> expenseService.getTotalExpenseAmounByYearAndUser(null, "john"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test
-    void getTotalExpenseAmounByDayAndUser_invalidDay_throwsIllegalArgumentException() {
+    void getTotalExpenseAmounByDayAndUser_invalidDay_throwsBadRequestException() {
         assertThatThrownBy(() -> expenseService.getTotalExpenseAmounByDayAndUser(50, "john"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test
-    void getTotalExpenseAmounByDayAndUser_nullDay_throwsIllegalArgumentException() {
+    void getTotalExpenseAmounByDayAndUser_nullDay_throwsBadRequestException() {
         assertThatThrownBy(() -> expenseService.getTotalExpenseAmounByDayAndUser(null, "john"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test
-    void getTotalExpenseAmounByDayAndUser_dayBelowOne_throwsIllegalArgumentException() {
+    void getTotalExpenseAmounByDayAndUser_dayBelowOne_throwsBadRequestException() {
         assertThatThrownBy(() -> expenseService.getTotalExpenseAmounByDayAndUser(0, "john"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test
@@ -298,12 +300,12 @@ class ExpenseServiceTest {
     }
 
     @Test
-    void getExpensesForCurrentUserPaginated_userNotFound_throwsRuntimeException() {
+    void getExpensesForCurrentUserPaginated_userNotFound_throwsResourceNotFoundException() {
         when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> expenseService.getExpensesForCurrentUserPaginated("ghost", 0, 10))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Usuario no encontrado");
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("User not found");
     }
 
     @Test

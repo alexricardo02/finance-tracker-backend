@@ -1,5 +1,6 @@
 package com.example.service;
 
+import com.example.exceptions.InvalidCredentialsException;
 import com.example.models.PasswordResetToken;
 import com.example.models.User;
 import com.example.repository.PasswordResetTokenRepository;
@@ -46,11 +47,11 @@ public class PasswordResetService {
     @Transactional
     public void resetPassword(String token, String newPassword) {
         PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
-                .orElseThrow(() -> new SecurityException("Invalid or expired reset token"));
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid or expired reset token"));
 
         if (resetToken.getExpiryDate().isBefore(Instant.now())) {
             passwordResetTokenRepository.delete(resetToken);
-            throw new SecurityException("Invalid or expired reset token");
+            throw new InvalidCredentialsException("Invalid or expired reset token");
         }
 
         User user = resetToken.getUser();

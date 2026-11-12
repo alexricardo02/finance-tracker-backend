@@ -1,5 +1,7 @@
 package com.example.service;
 
+import com.example.exceptions.BadRequestException;
+import com.example.exceptions.ResourceNotFoundException;
 import com.example.dataTransferObjects.ImportResultDTO;
 import com.example.dataTransferObjects.TransactionImportRowDTO;
 import com.example.models.Category;
@@ -9,7 +11,6 @@ import com.example.repository.CategoryRepository;
 import com.example.repository.ExpenseRepository;
 import com.example.repository.IncomeRepository;
 import com.example.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,11 +61,11 @@ class ImportServiceTest {
     }
 
     @Test
-    void importTransactions_userNotFound_throwsEntityNotFoundException() {
+    void importTransactions_userNotFound_throwsResourceNotFoundException() {
         when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> importService.importTransactions(List.of(), "ghost"))
-                .isInstanceOf(EntityNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
@@ -106,7 +107,20 @@ class ImportServiceTest {
 
         assertThat(result.getImported()).isEqualTo(1);
         assertThat(result.getSkipped()).isEqualTo(1);
-        assertThat(result.getErrors()).anyMatch(e -> e.contains("Row 2"));
+        assertThat(result.getErrors()).containsExactly("Row 2: could not be imported");
+    }
+
+    @Test
+    void importTransactions_domainExceptionOnRow_keepsItsMessage() {
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(categoryRepository.findByUserUserIdOrUserIsNull(1)).thenReturn(List.of());
+        when(categoryRepository.save(any(Category.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(exchangeRateService.getConversionRate(anyString(), anyString(), any()))
+                .thenThrow(new BadRequestException("Unsupported currency"));
+
+        ImportResultDTO result = importService.importTransactions(List.of(row("income", 10.0, "Salary")), "john");
+
+        assertThat(result.getErrors()).containsExactly("Row 1: Unsupported currency");
     }
 
     @Test
