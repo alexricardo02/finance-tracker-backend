@@ -1,5 +1,8 @@
 package com.example.controllers;
 
+import com.example.exceptions.ConflictException;
+import com.example.exceptions.ForbiddenResourceException;
+import com.example.exceptions.ResourceNotFoundException;
 import com.example.dataTransferObjects.CategoryDTO;
 import com.example.models.Category;
 import com.example.models.User;
@@ -18,7 +21,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Date;
 import java.util.List;
@@ -81,12 +83,12 @@ class CategoryControllerTest {
     }
 
     @Test
-    void getUserCategories_userNotFound_throwsResponseStatusException() {
+    void getUserCategories_userNotFound_throwsResourceNotFoundException() {
         authenticateAs("ghost");
         when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> categoryController.getUserCategories())
-                .isInstanceOf(ResponseStatusException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
@@ -131,19 +133,19 @@ class CategoryControllerTest {
         when(categoryRepository.findById(5)).thenReturn(Optional.of(othersCategory));
 
         assertThatThrownBy(() -> categoryController.deleteCategory(5))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(ForbiddenResourceException.class)
                 .hasMessageContaining("Not authorized");
 
         verify(categoryRepository, never()).delete(any());
     }
 
     @Test
-    void deleteCategory_notFound_throwsResponseStatusException() {
+    void deleteCategory_notFound_throwsResourceNotFoundException() {
         authenticateAs("john");
         when(categoryRepository.findById(999)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> categoryController.deleteCategory(999))
-                .isInstanceOf(ResponseStatusException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
@@ -155,7 +157,7 @@ class CategoryControllerTest {
         when(expenseRepository.existsByCategory_CategoryId(5)).thenReturn(true);
 
         assertThatThrownBy(() -> categoryController.deleteCategory(5))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("in use");
 
         verify(categoryRepository, never()).delete(any());
@@ -171,7 +173,7 @@ class CategoryControllerTest {
         when(incomeRepository.existsByCategory_CategoryId(6)).thenReturn(true);
 
         assertThatThrownBy(() -> categoryController.deleteCategory(6))
-                .isInstanceOf(ResponseStatusException.class);
+                .isInstanceOf(ConflictException.class);
 
         verify(categoryRepository, never()).delete(any());
     }
@@ -185,7 +187,7 @@ class CategoryControllerTest {
         when(categoryRepository.findById(1)).thenReturn(Optional.of(globalCategory));
 
         assertThatThrownBy(() -> categoryController.deleteCategory(1))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(ForbiddenResourceException.class)
                 .hasMessageContaining("Not authorized");
 
         verify(categoryRepository, never()).delete(any());

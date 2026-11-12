@@ -1,5 +1,6 @@
 package com.example.controllers;
 
+import com.example.exceptions.ForbiddenResourceException;
 import com.example.dataTransferObjects.IncomeRequestDTO;
 import com.example.dataTransferObjects.IncomeResponseDTO;
 import com.example.dataTransferObjects.PagedResponse;
@@ -103,13 +104,13 @@ class IncomeControllerTest {
     }
 
     @Test
-    void getIncomeById_ownedByAnotherUser_serviceThrowsSecurityException() {
+    void getIncomeById_ownedByAnotherUser_serviceThrowsForbiddenResourceException() {
         // WHY: IDOR check — service enforces ownership so controller must pass principal.
         when(incomeService.getIncomeById(20, "john"))
-                .thenThrow(new SecurityException("No tienes permiso para ver este ingreso"));
+                .thenThrow(new ForbiddenResourceException("Not authorized to view this income"));
 
         assertThatThrownBy(() -> incomeController.getIncomeById(principal, 20))
-                .isInstanceOf(SecurityException.class);
+                .isInstanceOf(ForbiddenResourceException.class);
     }
 
     // ── updateIncome ──────────────────────────────────────────────────────────
@@ -146,12 +147,12 @@ class IncomeControllerTest {
     }
 
     @Test
-    void deleteIncome_ownedByAnotherUser_serviceThrowsSecurityException() {
-        doThrow(new SecurityException("No tienes permiso para eliminar este ingreso"))
+    void deleteIncome_ownedByAnotherUser_serviceThrowsForbiddenResourceException() {
+        doThrow(new ForbiddenResourceException("Not authorized to delete this income"))
                 .when(incomeService).deleteIncome(20, "john");
 
         assertThatThrownBy(() -> incomeController.deleteIncome(principal, 20))
-                .isInstanceOf(SecurityException.class);
+                .isInstanceOf(ForbiddenResourceException.class);
     }
 
     // ── by-type ───────────────────────────────────────────────────────────────

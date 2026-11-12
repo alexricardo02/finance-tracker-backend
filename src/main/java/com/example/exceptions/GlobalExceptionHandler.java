@@ -49,9 +49,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
-    @ExceptionHandler(ForbiddenResourceException.class)
-    public ResponseEntity<ErrorResponse> handleForbiddenResource(ForbiddenResourceException ex) {
-        return build(HttpStatus.FORBIDDEN, ex.getMessage());
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<ErrorResponse> handleApiException(ApiException ex) {
+        return build(ex.getStatus(), ex.getMessage());
     }
 
     @ExceptionHandler(ResponseStatusException.class)

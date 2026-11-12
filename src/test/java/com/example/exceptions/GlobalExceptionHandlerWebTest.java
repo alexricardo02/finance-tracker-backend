@@ -2,6 +2,8 @@ package com.example.exceptions;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
@@ -41,6 +43,21 @@ class GlobalExceptionHandlerWebTest {
         @GetMapping("/bad-credentials")
         void badCredentials() { throw new SecurityException("Bad credentials"); }
 
+        @GetMapping("/api/not-found")
+        void apiNotFound() { throw new ResourceNotFoundException("Expense not found"); }
+
+        @GetMapping("/api/bad-request")
+        void apiBadRequest() { throw new BadRequestException("Invalid month"); }
+
+        @GetMapping("/api/conflict")
+        void apiConflict() { throw new ConflictException("Email already registered"); }
+
+        @GetMapping("/api/invalid-credentials")
+        void apiInvalidCredentials() { throw new InvalidCredentialsException("Invalid username or password"); }
+
+        @GetMapping("/api/forbidden")
+        void apiForbidden() { throw new ForbiddenResourceException("Not authorized to view this income"); }
+
         @GetMapping("/teapot")
         void status() { throw new ResponseStatusException(HttpStatus.I_AM_A_TEAPOT, "teapot"); }
     }
@@ -73,6 +90,21 @@ class GlobalExceptionHandlerWebTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.httpCode").value(404))
                 .andExpect(jsonPath("$.message").value("Income not found"))
+                .andExpect(jsonPath("$.timeStamp").exists());
+    }
+
+    @ParameterizedTest(name = "{0} -> {1}")
+    @CsvSource({
+            "/api/not-found, 404, Expense not found",
+            "/api/bad-request, 400, Invalid month",
+            "/api/conflict, 409, Email already registered",
+            "/api/invalid-credentials, 401, Invalid username or password",
+            "/api/forbidden, 403, Not authorized to view this income"})
+    void apiException_returnsItsStatusAndMessage(String path, int status, String message) throws Exception {
+        mvc.perform(get(path))
+                .andExpect(status().is(status))
+                .andExpect(jsonPath("$.httpCode").value(status))
+                .andExpect(jsonPath("$.message").value(message))
                 .andExpect(jsonPath("$.timeStamp").exists());
     }
 

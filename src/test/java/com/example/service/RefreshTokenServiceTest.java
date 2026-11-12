@@ -1,5 +1,7 @@
 package com.example.service;
 
+import com.example.exceptions.InvalidCredentialsException;
+import com.example.exceptions.ResourceNotFoundException;
 import com.example.models.RefreshToken;
 import com.example.models.User;
 import com.example.repository.RefreshTokenRepository;
@@ -67,12 +69,12 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    void createRefreshToken_userNotFound_throwsRuntimeException() {
+    void createRefreshToken_userNotFound_throwsResourceNotFoundException() {
         when(refreshTokenRepository.findByUserId(1)).thenReturn(Optional.empty());
         when(userRepository.findById(1)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> refreshTokenService.createRefreshToken(1))
-                .isInstanceOf(RuntimeException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
@@ -92,7 +94,7 @@ class RefreshTokenServiceTest {
         token.setExpiryDate(Instant.now().minusSeconds(1));
 
         assertThatThrownBy(() -> refreshTokenService.verifyExpiration(token))
-                .isInstanceOf(SecurityException.class);
+                .isInstanceOf(InvalidCredentialsException.class);
 
         verify(refreshTokenRepository).delete(token);
     }

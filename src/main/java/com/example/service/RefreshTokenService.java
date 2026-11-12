@@ -1,5 +1,7 @@
 package com.example.service;
 
+import com.example.exceptions.InvalidCredentialsException;
+import com.example.exceptions.ResourceNotFoundException;
 import com.example.models.RefreshToken;
 import com.example.models.User;
 import com.example.repository.RefreshTokenRepository;
@@ -29,7 +31,7 @@ public class RefreshTokenService {
         RefreshToken refreshToken = refreshTokenRepository.findByUserId(userId)
                 .orElse(new RefreshToken());
 
-        refreshToken.setUser(userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found")));
+        refreshToken.setUser(userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found")));
         refreshToken.setToken(java.util.UUID.randomUUID().toString());
         refreshToken.setExpiryDate(java.time.Instant.now().plusMillis(refreshTokenDurationMs));
 
@@ -39,7 +41,7 @@ public class RefreshTokenService {
     public RefreshToken verifyExpiration(RefreshToken token) {
         if (token.getExpiryDate().compareTo(Instant.now()) < 0) {
             refreshTokenRepository.delete(token);
-            throw new SecurityException("El Refresh Token ha expirado. Por favor, inicia sesión de nuevo.");
+            throw new InvalidCredentialsException("Refresh token expired, please log in again");
         }
         return token;
     }

@@ -1,5 +1,6 @@
 package com.example.service;
 
+import com.example.exceptions.ResourceNotFoundException;
 import com.example.dataTransferObjects.ImportResultDTO;
 import com.example.dataTransferObjects.TransactionImportRowDTO;
 import com.example.models.Category;
@@ -9,7 +10,6 @@ import com.example.repository.CategoryRepository;
 import com.example.repository.ExpenseRepository;
 import com.example.repository.IncomeRepository;
 import com.example.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,11 +60,11 @@ class ImportServiceTest {
     }
 
     @Test
-    void importTransactions_userNotFound_throwsEntityNotFoundException() {
+    void importTransactions_userNotFound_throwsResourceNotFoundException() {
         when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> importService.importTransactions(List.of(), "ghost"))
-                .isInstanceOf(EntityNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test

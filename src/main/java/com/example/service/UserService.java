@@ -1,5 +1,9 @@
 package com.example.service;
 
+import com.example.exceptions.BadRequestException;
+import com.example.exceptions.ConflictException;
+import com.example.exceptions.InvalidCredentialsException;
+import com.example.exceptions.ResourceNotFoundException;
 import java.sql.Timestamp;
 
 
@@ -24,7 +28,6 @@ import com.example.repository.PasswordResetTokenRepository;
 import com.example.repository.RefreshTokenRepository;
 import com.example.repository.UserRepository;
 
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import com.example.models.Category;
 
@@ -62,11 +65,11 @@ public class UserService {
 	@Transactional
 	public UserProfileDTO  saveUser(UserRegistrationDTO  registrationDTO) {
 		if (userRepository.existsByEmail(registrationDTO.getEmail())) {
-            throw new IllegalArgumentException("Email already registered");
+            throw new ConflictException("Email already registered");
         }
 		// Validate username uniqueness
         if (userRepository.existsByUsername(registrationDTO.getUsername())) {
-            throw new IllegalArgumentException("Username already taken");
+            throw new ConflictException("Username already taken");
         }
         
      // Create new user
@@ -84,7 +87,7 @@ public class UserService {
 	
 	public Role getRoleByUsername(String username) {
 	    return userRepository.findByUsername(username)
-	            .orElseThrow(() -> new EntityNotFoundException("User not found"))
+	            .orElseThrow(() -> new ResourceNotFoundException("User not found"))
 	            .getRole();
 	}
 	
@@ -94,14 +97,14 @@ public class UserService {
 	
 	public UserProfileDTO getUserById(Integer id) {
 		User user = userRepository.findById(id)
-	            .orElseThrow(() -> new EntityNotFoundException("User not found"));
+	            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 	        return convertToProfileDTO(user);
 	}
 	
 	@Transactional
 	public void deleteUser(Integer id) {
 		User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         
         refreshTokenRepository.deleteByUser(user);
 
@@ -113,14 +116,14 @@ public class UserService {
     @Transactional
     public UserProfileDTO updateUserProfile(Integer userId, UserUpdateDTO updateDTO) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new EntityNotFoundException("User not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         
         // Update username if provided and unique
         if (updateDTO != null && updateDTO.getUsername() != null 
                 && !updateDTO.getUsername().isBlank()) {
             if (!user.getUsername().equals(updateDTO.getUsername())) {
                 if (userRepository.existsByUsername(updateDTO.getUsername())) {
-                    throw new IllegalArgumentException("Username already taken");
+                    throw new ConflictException("Username already taken");
                 }
                 user.setUsername(updateDTO.getUsername());
             }
@@ -130,10 +133,10 @@ public class UserService {
         if (updateDTO.getEmail() != null) {
             if (!user.getEmail().equals(updateDTO.getEmail())) {
                 if (userRepository.existsByEmail(updateDTO.getEmail())) {
-                    throw new IllegalArgumentException("Email already registered");
+                    throw new ConflictException("Email already registered");
                 }
                 if (!isValidEmail(updateDTO.getEmail())) {
-                    throw new IllegalArgumentException("Invalid email format");
+                    throw new BadRequestException("Invalid email format");
                 }
                 user.setEmail(updateDTO.getEmail());
             }
@@ -156,11 +159,11 @@ public class UserService {
 	@Transactional
     public void updatePassword(Integer userId, PasswordChangeDTO passwordDTO) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new EntityNotFoundException("User not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         
         // Verify current password
         if (!passwordEncoder.matches(passwordDTO.getCurrentPassword(), user.getPassword_hash())) {
-            throw new SecurityException("Current password is incorrect");
+            throw new InvalidCredentialsException("Current password is incorrect");
         }
         
         // Update to new password
@@ -178,10 +181,10 @@ public class UserService {
 	public UserProfileDTO login(LoginRequestDTO loginDTO) {
 
 	    User user = userRepository.findByUsername(loginDTO.getUsername())
-	            .orElseThrow(() -> new SecurityException("Usuario o contraseña incorrectos"));
+	            .orElseThrow(() -> new InvalidCredentialsException("Invalid username or password"));
 
 	    if (!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword_hash())) {
-	        throw new SecurityException("Usuario o contraseña incorrectos");
+	        throw new InvalidCredentialsException("Invalid username or password");
 	    }
 
 	    return convertToProfileDTO(user);
@@ -190,10 +193,10 @@ public class UserService {
 	@Transactional
 	public void deleteAccount(String username, String rawPassword) {
 	    User user = userRepository.findByUsername(username)
-	        .orElseThrow(() -> new EntityNotFoundException("User not found"));
+	        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
 	    if (!passwordEncoder.matches(rawPassword, user.getPassword_hash())) {
-	        throw new SecurityException("Incorrect password");
+	        throw new InvalidCredentialsException("Incorrect password");
 	    }
 
 	    Integer userId = user.getUserId();

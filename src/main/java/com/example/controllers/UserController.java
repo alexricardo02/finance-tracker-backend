@@ -1,5 +1,6 @@
 package com.example.controllers;
 
+import com.example.exceptions.InvalidCredentialsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.example.dataTransferObjects.DeleteAccountRequestDTO;
 
@@ -84,7 +85,7 @@ public class UserController {
         }
 
         RefreshToken tokenDB = refreshTokenService.findByToken(requestRefreshToken)
-                .orElseThrow(() -> new SecurityException("Refresh token no encontrado"));
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid refresh token"));
         refreshTokenService.verifyExpiration(tokenDB);
 
         User user = tokenDB.getUser();

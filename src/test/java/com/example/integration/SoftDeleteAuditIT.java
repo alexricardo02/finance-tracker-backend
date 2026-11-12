@@ -1,6 +1,5 @@
 package com.example.integration;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 
@@ -41,7 +40,6 @@ class SoftDeleteAuditIT extends AbstractApiIntegrationTest {
         assertThat(row.get("deleted_by")).isEqualTo(user.username());
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @Test
     void softDeletedTransaction_cannotBeDeletedOrUpdatedAgain() {
         ApiUser user = newUser();
@@ -123,6 +121,6 @@ class SoftDeleteAuditIT extends AbstractApiIntegrationTest {
         int status = call(HttpMethod.POST, "/api/users/register", null,
                 Map.of("username", user.username(), "password", PASSWORD, "email", user.email())).getStatusCode().value();
 
-        assertThat(status).isIn(201, 400, 409);
+        assertThat(status).isIn(201, 409);
     }
 }

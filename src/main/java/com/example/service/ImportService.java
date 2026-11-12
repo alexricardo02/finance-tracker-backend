@@ -1,5 +1,6 @@
 package com.example.service;
 
+import com.example.exceptions.ResourceNotFoundException;
 import com.example.dataTransferObjects.ImportResultDTO;
 import com.example.dataTransferObjects.TransactionImportRowDTO;
 import com.example.models.*;
@@ -7,7 +8,6 @@ import com.example.repository.CategoryRepository;
 import com.example.repository.ExpenseRepository;
 import com.example.repository.IncomeRepository;
 import com.example.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
@@ -30,7 +30,7 @@ public class ImportService {
     @Transactional
     public ImportResultDTO importTransactions(List<TransactionImportRowDTO> rows, String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Map<String, Category> categoryCache = new HashMap<>();
         List<Income> incomesToSave = new ArrayList<>();

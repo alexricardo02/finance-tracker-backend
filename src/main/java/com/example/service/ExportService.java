@@ -1,5 +1,6 @@
 package com.example.service;
 
+import com.example.exceptions.ResourceNotFoundException;
 import com.example.dataTransferObjects.TransactionExportRow;
 import com.example.models.Expense;
 import com.example.models.Income;
@@ -8,7 +9,6 @@ import com.example.models.User;
 import com.example.repository.ExpenseRepository;
 import com.example.repository.IncomeRepository;
 import com.example.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.Predicate;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -48,7 +48,7 @@ public class ExportService {
     private List<TransactionExportRow> buildRows(String username, LocalDate startDate, LocalDate endDate,
                                                   Long categoryId, PaymentMethod paymentMethod, String kind) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         List<TransactionExportRow> rows = new ArrayList<>();
 

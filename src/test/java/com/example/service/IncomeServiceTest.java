@@ -1,5 +1,8 @@
 package com.example.service;
 
+import com.example.exceptions.BadRequestException;
+import com.example.exceptions.ForbiddenResourceException;
+import com.example.exceptions.ResourceNotFoundException;
 import com.example.dataTransferObjects.IncomeRequestDTO;
 import com.example.dataTransferObjects.IncomeResponseDTO;
 import com.example.dataTransferObjects.PagedResponse;
@@ -24,7 +27,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.Date;
@@ -96,26 +98,26 @@ class IncomeServiceTest {
     }
 
     @Test
-    void saveIncome_amountNull_throwsIllegalArgumentException() {
+    void saveIncome_amountNull_throwsBadRequestException() {
         IncomeRequestDTO dto = new IncomeRequestDTO();
         dto.setAmount(null);
 
         assertThatThrownBy(() -> incomeService.saveIncome(dto, "john"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test
-    void saveIncome_categoryIdNull_throwsResponseStatusException() {
+    void saveIncome_categoryIdNull_throwsBadRequestException() {
         IncomeRequestDTO dto = new IncomeRequestDTO();
         dto.setAmount(100.0);
         dto.setCategoryId(null);
 
         assertThatThrownBy(() -> incomeService.saveIncome(dto, "john"))
-                .isInstanceOf(ResponseStatusException.class);
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test
-    void saveIncome_categoryNotFound_throwsResponseStatusException() {
+    void saveIncome_categoryNotFound_throwsResourceNotFoundException() {
         IncomeRequestDTO dto = new IncomeRequestDTO();
         dto.setAmount(100.0);
         dto.setCategoryId(999);
@@ -123,7 +125,7 @@ class IncomeServiceTest {
         when(categoryRepository.findById(999)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> incomeService.saveIncome(dto, "john"))
-                .isInstanceOf(ResponseStatusException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
@@ -136,19 +138,19 @@ class IncomeServiceTest {
     }
 
     @Test
-    void getIncomeById_notFound_throwsEntityNotFoundException() {
+    void getIncomeById_notFound_throwsResourceNotFoundException() {
         when(incomeRepository.findById(999)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> incomeService.getIncomeById(999, "john"))
-                .isInstanceOf(jakarta.persistence.EntityNotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
-    void getIncomeById_wrongUser_throwsSecurityException() {
+    void getIncomeById_wrongUser_throwsForbiddenResourceException() {
         when(incomeRepository.findById(10)).thenReturn(Optional.of(income));
 
         assertThatThrownBy(() -> incomeService.getIncomeById(10, "someoneElse"))
-                .isInstanceOf(SecurityException.class);
+                .isInstanceOf(ForbiddenResourceException.class);
     }
 
     @Test
@@ -164,21 +166,21 @@ class IncomeServiceTest {
     }
 
     @Test
-    void deleteIncome_wrongUser_throwsSecurityException_doesNotDelete() {
+    void deleteIncome_wrongUser_throwsForbiddenResourceException_doesNotDelete() {
         when(incomeRepository.findById(10)).thenReturn(Optional.of(income));
 
         assertThatThrownBy(() -> incomeService.deleteIncome(10, "intruder"))
-                .isInstanceOf(SecurityException.class);
+                .isInstanceOf(ForbiddenResourceException.class);
 
         verify(incomeRepository, never()).save(any());
     }
 
     @Test
-    void deleteIncome_notFound_throwsRuntimeException() {
+    void deleteIncome_notFound_throwsResourceNotFoundException() {
         when(incomeRepository.findById(999)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> incomeService.deleteIncome(999, "john"))
-                .isInstanceOf(RuntimeException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
@@ -203,23 +205,23 @@ class IncomeServiceTest {
     }
 
     @Test
-    void updateIncome_wrongUser_throwsSecurityException() {
+    void updateIncome_wrongUser_throwsForbiddenResourceException() {
         IncomeRequestDTO dto = new IncomeRequestDTO();
         when(incomeRepository.findById(10)).thenReturn(Optional.of(income));
 
         assertThatThrownBy(() -> incomeService.updateIncome(10, dto, "intruder"))
-                .isInstanceOf(SecurityException.class);
+                .isInstanceOf(ForbiddenResourceException.class);
     }
 
     @Test
-    void updateIncome_categoryNotFound_throwsResponseStatusException() {
+    void updateIncome_categoryNotFound_throwsResourceNotFoundException() {
         IncomeRequestDTO dto = new IncomeRequestDTO();
         dto.setCategoryId(999);
         when(incomeRepository.findById(10)).thenReturn(Optional.of(income));
         when(categoryRepository.findById(999)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> incomeService.updateIncome(10, dto, "john"))
-                .isInstanceOf(ResponseStatusException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
@@ -233,9 +235,9 @@ class IncomeServiceTest {
     }
 
     @Test
-    void getTotalIncomeAmountByMonth_invalidMonth_throwsIllegalArgumentException() {
+    void getTotalIncomeAmountByMonth_invalidMonth_throwsBadRequestException() {
         assertThatThrownBy(() -> incomeService.getTotalIncomeAmountByMonth("NOTAMONTH", "john"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test
@@ -343,13 +345,13 @@ class IncomeServiceTest {
     }
 
     @Test
-    void getTotalIncomeAmounByDay_invalidDay_throwsIllegalArgumentException() {
+    void getTotalIncomeAmounByDay_invalidDay_throwsBadRequestException() {
         assertThatThrownBy(() -> incomeService.getTotalIncomeAmounByDay(0, "john"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class);
         assertThatThrownBy(() -> incomeService.getTotalIncomeAmounByDay(32, "john"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class);
         assertThatThrownBy(() -> incomeService.getTotalIncomeAmounByDay(null, "john"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class);
     }
 
     @Test
@@ -363,8 +365,8 @@ class IncomeServiceTest {
     }
 
     @Test
-    void getTotalIncomeAmountByYear_nullYear_throwsIllegalArgumentException() {
+    void getTotalIncomeAmountByYear_nullYear_throwsBadRequestException() {
         assertThatThrownBy(() -> incomeService.getTotalIncomeAmountByYear(null, "john"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BadRequestException.class);
     }
 }

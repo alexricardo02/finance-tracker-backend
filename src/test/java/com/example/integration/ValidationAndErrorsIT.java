@@ -260,7 +260,6 @@ class ValidationAndErrorsIT extends AbstractApiIntegrationTest {
         assertErrorShape(call(HttpMethod.GET, "/api/incomes/99999999", user, null), 404);
     }
 
-    @Disabled("BUG-8: client errors are not mapped to 4xx by GlobalExceptionHandler")
     @Test
     void updateOrDeleteMissingTransaction_returns404() {
         ApiUser user = newUser();

@@ -1,5 +1,6 @@
 package com.example.service;
 
+import com.example.exceptions.InvalidCredentialsException;
 import com.example.models.PasswordResetToken;
 import com.example.models.User;
 import com.example.repository.PasswordResetTokenRepository;
@@ -89,11 +90,11 @@ class PasswordResetServiceTest {
     }
 
     @Test
-    void resetPassword_unknownToken_throwsSecurityException() {
+    void resetPassword_unknownToken_throwsInvalidCredentialsException() {
         when(passwordResetTokenRepository.findByToken("bogus")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> passwordResetService.resetPassword("bogus", "newPass123"))
-                .isInstanceOf(SecurityException.class);
+                .isInstanceOf(InvalidCredentialsException.class);
     }
 
     @Test
@@ -106,7 +107,7 @@ class PasswordResetServiceTest {
         when(passwordResetTokenRepository.findByToken("expired-token")).thenReturn(Optional.of(token));
 
         assertThatThrownBy(() -> passwordResetService.resetPassword("expired-token", "newPass123"))
-                .isInstanceOf(SecurityException.class);
+                .isInstanceOf(InvalidCredentialsException.class);
 
         verify(passwordResetTokenRepository).delete(token);
         verify(userRepository, never()).save(any());

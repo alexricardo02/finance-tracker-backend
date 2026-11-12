@@ -1,5 +1,6 @@
 package com.example.controllers;
 
+import com.example.exceptions.BadRequestException;
 import com.example.models.PaymentMethod;
 import com.example.service.ExportService;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -8,8 +9,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
 import java.security.Principal;
@@ -47,8 +46,7 @@ public class ExportController {
         // Reject any format not on the allowlist before it touches a header
         String safeFormat = format.toLowerCase();
         if (!ALLOWED_FORMATS.contains(safeFormat)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Unsupported export format '" + safeFormat + "'. Allowed values: csv, xlsx, pdf");
+            throw new BadRequestException("Unsupported export format. Allowed values: csv, xlsx, pdf");
         }
 
         byte[] data = exportService.export(principal.getName(), safeFormat, startDate, endDate, categoryId, paymentMethod, kind);

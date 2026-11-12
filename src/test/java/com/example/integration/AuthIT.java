@@ -64,17 +64,23 @@ class AuthIT extends AbstractApiIntegrationTest {
     }
 
     @Test
-    void register_duplicateUsername_returns400() {
+    void register_duplicateUsername_returns409() {
         ApiUser existing = newUser();
-        assertErrorShape(call(HttpMethod.POST, "/api/users/register", null,
-                Map.of("username", existing.username(), "password", PASSWORD, "email", "other" + System.nanoTime() + "@test.com")), 400);
+        ResponseEntity<String> response = call(HttpMethod.POST, "/api/users/register", null,
+                Map.of("username", existing.username(), "password", PASSWORD, "email", "other" + System.nanoTime() + "@test.com"));
+
+        assertErrorShape(response, 409);
+        assertThat(json(response).get("message").asText()).isEqualTo("Username already taken");
     }
 
     @Test
-    void register_duplicateEmail_returns400() {
+    void register_duplicateEmail_returns409() {
         ApiUser existing = newUser();
-        assertErrorShape(call(HttpMethod.POST, "/api/users/register", null,
-                Map.of("username", "other" + System.nanoTime(), "password", PASSWORD, "email", existing.email())), 400);
+        ResponseEntity<String> response = call(HttpMethod.POST, "/api/users/register", null,
+                Map.of("username", "other" + System.nanoTime(), "password", PASSWORD, "email", existing.email()));
+
+        assertErrorShape(response, 409);
+        assertThat(json(response).get("message").asText()).isEqualTo("Email already registered");
     }
 
     @Test
@@ -95,6 +101,7 @@ class AuthIT extends AbstractApiIntegrationTest {
         assertErrorShape(wrongPassword, 401);
         assertErrorShape(unknownUser, 401);
         assertThat(json(wrongPassword).get("message")).isEqualTo(json(unknownUser).get("message"));
+        assertThat(json(unknownUser).get("message").asText()).isEqualTo("Invalid username or password");
     }
 
     @Test
